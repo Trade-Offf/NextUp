@@ -1,0 +1,42 @@
+// Next Up 集中配置。
+// 替换成自己的标识时，只改这个文件。
+// NextUpShared/AppIdentity.swift 里的 placeholder 必须与这里一致，测试会校验。
+
+NEXTUP_APP_BUNDLE_ID = com.example.nextup
+NEXTUP_WIDGET_BUNDLE_ID = com.example.nextup.widget
+NEXTUP_SHARED_BUNDLE_ID = com.example.nextup.shared
+NEXTUP_TESTS_BUNDLE_ID = com.example.nextup.tests
+NEXTUP_APP_GROUP_ID = group.com.example.nextup
+NEXTUP_URL_SCHEME = nextup
+NEXTUP_WIDGET_KIND = NextUpWidget
+
+MACOSX_DEPLOYMENT_TARGET = 15.0
+SWIFT_VERSION = 5.0
+MARKETING_VERSION = 1.0
+CURRENT_PROJECT_VERSION = 1
+PRODUCT_BUNDLE_IDENTIFIER = $(NEXTUP_APP_BUNDLE_ID)
+
+// 本机没有 Development Team 时用 local entitlements（只有沙盒），可以 ad-hoc 签名并运行。
+// 选好 Team 后改为带 App Group 的文件，并把 CODE_SIGN_STYLE 改为 Automatic，填上 DEVELOPMENT_TEAM：
+// NEXTUP_APP_ENTITLEMENTS = NextUpApp/NextUpApp.entitlements
+// NEXTUP_WIDGET_ENTITLEMENTS = NextUpWidget/NextUpWidget.entitlements
+NEXTUP_APP_ENTITLEMENTS = NextUpApp/NextUpApp.local.entitlements
+NEXTUP_WIDGET_ENTITLEMENTS = NextUpWidget/NextUpWidget.local.entitlements
+CODE_SIGN_STYLE = Manual
+CODE_SIGN_IDENTITY = -
+DEVELOPMENT_TEAM =
+ENABLE_HARDENED_RUNTIME = YES
+DEAD_CODE_STRIPPING = YES
+SWIFT_EMIT_LOC_STRINGS = YES
+ENABLE_PREVIEWS = YES
+GENERATE_INFOPLIST_FILE = YES
+INFOPLIST_KEY_CFBundleDevelopmentRegion = zh-Hans
+INFOPLIST_KEY_CFBundleDisplayName = Next Up
+INFOPLIST_KEY_LSApplicationCategoryType = public.app-category.productivity
+ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon
+APPLICATION_EXTENSION_API_ONLY = NO
+SDKROOT = macosx
+SUPPORTED_PLATFORMS = macosx
+SUPPORTS_MACCATALYST = NO
+SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO
+SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO
