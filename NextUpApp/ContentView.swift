@@ -348,6 +348,10 @@ private struct ElasticTaskRow: View {
                         .frame(width: 28, height: 28)
                         .scaleEffect(parentCheckScale)
                         .accessibilityLabel("已完成：\(item.title)")
+                } else {
+                    Color.clear
+                        .frame(width: 28, height: 28)
+                        .accessibilityHidden(true)
                 }
 
                 titleControl
@@ -413,7 +417,7 @@ private struct ElasticTaskRow: View {
                     .font(.body)
                     .foregroundStyle(item.status == .done ? .secondary : .primary)
                     .strikethrough(item.status == .done, color: .secondary)
-                    .lineLimit(2)
+                    .lineLimit(1)
             }
             Spacer(minLength: 12)
             if item.status != .done, let text = trailing {

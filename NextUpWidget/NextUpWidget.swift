@@ -145,7 +145,7 @@ struct NextUpProvider: TimelineProvider {
         let parents = TodoSorting.widgetItems(items, limit: 7, now: now, calendar: calendar)
         var rows: [WidgetRow] = []
         func visit(_ item: TodoItem, depth: Int) {
-            guard rows.count < 8 else { return }
+            guard rows.count < 16 else { return }
             let hasChildren = items.contains { $0.parentID == item.id }
             rows.append(
                 WidgetRow(
@@ -164,7 +164,7 @@ struct NextUpProvider: TimelineProvider {
             }
         }
         for parent in parents {
-            guard rows.count < 8 else { break }
+            guard rows.count < 16 else { break }
             visit(parent, depth: 0)
         }
         return rows
@@ -256,8 +256,8 @@ struct NextUpWidgetView: View {
                 Rectangle()
                     .fill(Color.primary.opacity(0.14))
                     .frame(height: 0.5)
-                    .padding(.top, 7)
-                    .padding(.bottom, 5)
+                    .padding(.top, 8)
+                    .padding(.bottom, 6)
                     .accessibilityHidden(true)
             }
             HStack(alignment: .center, spacing: 6) {
@@ -271,6 +271,10 @@ struct NextUpWidgetView: View {
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel("完成：\(row.title)")
+                } else {
+                    Color.clear
+                        .frame(width: 16, height: 16)
+                        .accessibilityHidden(true)
                 }
 
                 if let destination = taskURL(for: row.id) {
@@ -282,7 +286,7 @@ struct NextUpWidgetView: View {
                     rowLabel(row)
                 }
             }
-            .padding(.top, isNewGroup ? 0 : 4)
+            .padding(.top, isNewGroup ? 2 : 6)
             .padding(.leading, CGFloat(row.depth) * 16)
         }
     }
