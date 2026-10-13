@@ -19,8 +19,8 @@ struct WidgetRow: Identifiable {
         self.canComplete = canComplete
     }
 
-    init(item: TodoItem, now: Date, calendar: Calendar, depth: Int, canComplete: Bool) {
-        let auxiliary = TaskAuxiliaryText.make(status: item.status, dueDate: item.dueDate, now: now, calendar: calendar)
+    init(item: TodoItem, now: Date, calendar: Calendar, depth: Int, canComplete: Bool, language: AppLanguage = .resolved) {
+        let auxiliary = TaskAuxiliaryText.make(status: item.status, dueDate: item.dueDate, now: now, calendar: calendar, language: language)
         self.id = item.id.uuidString
         self.title = WidgetRow.singleLine(item.title)
         self.trailing = auxiliary.text ?? ""
@@ -30,11 +30,7 @@ struct WidgetRow: Identifiable {
     }
 
     static func singleLine(_ title: String) -> String {
-        title
-            .components(separatedBy: .newlines)
-            .joined(separator: " ")
-            .replacingOccurrences(of: "\u{2028}", with: " ")
-            .replacingOccurrences(of: "\u{2029}", with: " ")
+        NextUpChrome.plainTitle(title)
     }
 }
 
@@ -53,45 +49,51 @@ struct WidgetEntry: TimelineEntry {
         WidgetEntry(date: date, unfinishedCount: 0, rows: [], largeRows: [], isReadFailure: true)
     }
 
-    static let preview = WidgetEntry(
-        date: .now,
-        unfinishedCount: 5,
-        rows: [
-            WidgetRow(id: "preview-1", title: "与 Allen 对齐 BD 排期", trailing: "10/14", isOverdue: false),
-            WidgetRow(id: "preview-2", title: "确认 CashBack 发版事项", trailing: "10/15", isOverdue: false),
-            WidgetRow(id: "preview-3", title: "更新 i18n 方案", trailing: "等待反馈", isOverdue: false)
-        ],
-        largeRows: [
-            WidgetRow(id: "preview-1", title: "与 Allen 对齐 BD 排期", trailing: "10/14", isOverdue: false, canComplete: false),
-            WidgetRow(id: "preview-1a", title: "确认接口字段", trailing: "", isOverdue: false, depth: 1),
-            WidgetRow(id: "preview-1b", title: "约下次评审", trailing: "", isOverdue: false, depth: 1),
-            WidgetRow(id: "preview-2", title: "确认 CashBack 发版事项", trailing: "10/15", isOverdue: false),
-            WidgetRow(id: "preview-3", title: "更新 i18n 方案", trailing: "等待反馈", isOverdue: false)
-        ],
-        isReadFailure: false
-    )
+    static var preview: WidgetEntry {
+        let waiting = Copy.text(.waiting, AppLanguage.resolved)
+        return WidgetEntry(
+            date: .now,
+            unfinishedCount: 5,
+            rows: [
+                WidgetRow(id: "preview-1", title: "与 Allen 对齐 BD 排期", trailing: "10/14", isOverdue: false),
+                WidgetRow(id: "preview-2", title: "确认 CashBack 发版事项", trailing: "10/15", isOverdue: false),
+                WidgetRow(id: "preview-3", title: "更新 i18n 方案", trailing: waiting, isOverdue: false)
+            ],
+            largeRows: [
+                WidgetRow(id: "preview-1", title: "与 Allen 对齐 BD 排期", trailing: "10/14", isOverdue: false, canComplete: false),
+                WidgetRow(id: "preview-1a", title: "确认接口字段", trailing: "", isOverdue: false, depth: 1),
+                WidgetRow(id: "preview-1b", title: "约下次评审", trailing: "", isOverdue: false, depth: 1),
+                WidgetRow(id: "preview-2", title: "确认 CashBack 发版事项", trailing: "10/15", isOverdue: false),
+                WidgetRow(id: "preview-3", title: "更新 i18n 方案", trailing: waiting, isOverdue: false)
+            ],
+            isReadFailure: false
+        )
+    }
 
-    static let longTitle = WidgetEntry(
-        date: .now,
-        unfinishedCount: 1,
-        rows: [
-            WidgetRow(
-                id: "preview-long",
-                title: "这是一条非常长的任务标题，用来确认右侧日期不会被挤出卡片",
-                trailing: "已逾期",
-                isOverdue: true
-            )
-        ],
-        largeRows: [
-            WidgetRow(
-                id: "preview-long",
-                title: "这是一条非常长的任务标题，用来确认右侧日期不会被挤出卡片",
-                trailing: "已逾期",
-                isOverdue: true
-            )
-        ],
-        isReadFailure: false
-    )
+    static var longTitle: WidgetEntry {
+        let overdue = Copy.text(.overdue, AppLanguage.resolved)
+        return WidgetEntry(
+            date: .now,
+            unfinishedCount: 1,
+            rows: [
+                WidgetRow(
+                    id: "preview-long",
+                    title: "这是一条非常长的任务标题，用来确认右侧日期不会被挤出卡片",
+                    trailing: overdue,
+                    isOverdue: true
+                )
+            ],
+            largeRows: [
+                WidgetRow(
+                    id: "preview-long",
+                    title: "这是一条非常长的任务标题，用来确认右侧日期不会被挤出卡片",
+                    trailing: overdue,
+                    isOverdue: true
+                )
+            ],
+            isReadFailure: false
+        )
+    }
 }
 
 struct NextUpProvider: TimelineProvider {
@@ -175,6 +177,8 @@ struct NextUpWidgetView: View {
     @Environment(\.widgetFamily) private var family
     let entry: WidgetEntry
 
+    private var language: AppLanguage { AppLanguage.resolved }
+
     private var visibleRows: [WidgetRow] {
         family == .systemLarge ? entry.largeRows : entry.rows
     }
@@ -182,7 +186,7 @@ struct NextUpWidgetView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             header
-                .padding(.bottom, 8)
+                .padding(.bottom, NextUpChrome.widgetHeaderGap)
             if entry.isReadFailure {
                 failure
             } else if visibleRows.isEmpty {
@@ -199,30 +203,30 @@ struct NextUpWidgetView: View {
 
     private var header: some View {
         HStack(alignment: .firstTextBaseline) {
-            Text("接下来")
-                .font(.system(size: 15, weight: .semibold))
+            Text(Copy.text(.windowTitle, language))
+                .font(.system(size: NextUpChrome.taskSize, weight: .semibold))
                 .foregroundStyle(.primary)
                 .widgetAccentable()
             Spacer(minLength: 12)
             if !entry.isReadFailure {
-                Text("\(entry.unfinishedCount) 项")
-                    .font(.system(size: 12).monospacedDigit())
+                Text(Copy.openCount(entry.unfinishedCount, language))
+                    .font(.system(size: NextUpChrome.dateSize).monospacedDigit())
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: true, vertical: false)
                     .layoutPriority(1)
             }
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(entry.isReadFailure ? "接下来" : "接下来，\(entry.unfinishedCount) 项未完成")
+        .accessibilityLabel(entry.isReadFailure ? Copy.text(.windowTitle, language) : Copy.unfinishedLabel(entry.unfinishedCount, language))
     }
 
     private var empty: some View {
         VStack(alignment: .leading, spacing: 4) {
             Spacer(minLength: 0)
-            Text("都处理好了")
+            Text(Copy.text(.allDone, language))
                 .font(.title3.weight(.medium))
                 .foregroundStyle(.primary)
-            Text("点击打开 Next Up")
+            Text(Copy.text(.tapToOpen, language))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
             Spacer(minLength: 0)
@@ -230,16 +234,16 @@ struct NextUpWidgetView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         .widgetURL(openURL)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("都处理好了。点击打开 Next Up")
+        .accessibilityLabel(Copy.text(.allDoneHint, language))
     }
 
     private var failure: some View {
         VStack(alignment: .leading, spacing: 4) {
             Spacer(minLength: 0)
-            Text("暂时无法读取任务")
+            Text(Copy.text(.readFailed, language))
                 .font(.title3.weight(.medium))
                 .foregroundStyle(.primary)
-            Text("点击打开 Next Up")
+            Text(Copy.text(.tapToOpen, language))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
             Spacer(minLength: 0)
@@ -247,17 +251,17 @@ struct NextUpWidgetView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         .widgetURL(openURL)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("暂时无法读取任务。点击打开 Next Up")
+        .accessibilityLabel(Copy.text(.readFailedHint, language))
     }
 
     private func taskRow(_ row: WidgetRow, isNewGroup: Bool) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             if isNewGroup {
                 Rectangle()
-                    .fill(Color.primary.opacity(0.14))
-                    .frame(height: 0.5)
-                    .padding(.top, 8)
-                    .padding(.bottom, 6)
+                    .fill(Color.primary.opacity(NextUpChrome.hairlineOpacity))
+                    .frame(height: NextUpChrome.hairline)
+                    .padding(.top, NextUpChrome.widgetDividerTop)
+                    .padding(.bottom, NextUpChrome.widgetDividerBottom)
                     .accessibilityHidden(true)
             }
             HStack(alignment: .center, spacing: 6) {
@@ -270,11 +274,7 @@ struct NextUpWidgetView: View {
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel("完成：\(row.title)")
-                } else {
-                    Color.clear
-                        .frame(width: 16, height: 16)
-                        .accessibilityHidden(true)
+                    .accessibilityLabel(Copy.complete(row.title, language))
                 }
 
                 if let destination = taskURL(for: row.id) {
@@ -286,22 +286,22 @@ struct NextUpWidgetView: View {
                     rowLabel(row)
                 }
             }
-            .padding(.top, isNewGroup ? 2 : 6)
-            .padding(.leading, CGFloat(row.depth) * 16)
+            .padding(.top, isNewGroup ? NextUpChrome.widgetGroupRowGap : NextUpChrome.widgetRowGap)
+            .padding(.leading, CGFloat(row.depth) * NextUpChrome.widgetIndent)
         }
     }
 
     private func rowLabel(_ row: WidgetRow) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
             Text(WidgetRow.singleLine(row.title))
-                .font(.system(size: 13, weight: row.canComplete ? .regular : .semibold))
+                .font(.system(size: NextUpChrome.taskSize, weight: row.canComplete ? .regular : .semibold))
                 .foregroundStyle(.primary)
                 .lineLimit(1)
                 .truncationMode(.tail)
                 .frame(maxWidth: .infinity, alignment: .leading)
             if !row.trailing.isEmpty {
                 Text(row.trailing)
-                    .font(.system(size: 12).monospacedDigit())
+                    .font(.system(size: NextUpChrome.dateSize).monospacedDigit())
                     .foregroundStyle(row.isOverdue ? Color.orange : Color.secondary)
                     .lineLimit(1)
                     .fixedSize(horizontal: true, vertical: false)
@@ -325,35 +325,38 @@ private struct MetalCardBackground: View {
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
-        let graphite = colorScheme == .dark
+        let surface = NextUpChrome.surface(window: false, dark: colorScheme == .dark)
         ZStack {
             LinearGradient(
-                colors: graphite
-                    ? [
-                        Color(red: 0.24, green: 0.25, blue: 0.27),
-                        Color(red: 0.14, green: 0.15, blue: 0.16),
-                        Color(red: 0.18, green: 0.19, blue: 0.20)
-                    ]
-                    : [
-                        Color(red: 0.94, green: 0.95, blue: 0.96),
-                        Color(red: 0.78, green: 0.80, blue: 0.83),
-                        Color(red: 0.86, green: 0.88, blue: 0.90)
-                    ],
+                colors: [
+                    Color(stop: surface.top),
+                    Color(stop: surface.middle),
+                    Color(stop: surface.bottom)
+                ],
                 startPoint: .top,
                 endPoint: .bottom
             )
             VStack(spacing: 0) {
                 LinearGradient(
-                    colors: [Color.white.opacity(graphite ? 0.16 : 0.55), Color.white.opacity(0)],
+                    colors: [Color.white.opacity(surface.highlightOpacity), Color.white.opacity(0)],
                     startPoint: .top,
                     endPoint: .bottom
                 )
-                .frame(height: 22)
+                .frame(height: NextUpChrome.highlightHeight)
                 Spacer(minLength: 0)
             }
             ContainerRelativeShape()
-                .strokeBorder(Color.white.opacity(graphite ? 0.20 : 0.50), lineWidth: 0.5)
+                .strokeBorder(
+                    Color.white.opacity(colorScheme == .dark ? 0.20 : 0.50),
+                    lineWidth: NextUpChrome.hairline
+                )
         }
+    }
+}
+
+private extension Color {
+    init(stop: NextUpChrome.Stop) {
+        self.init(red: stop.red, green: stop.green, blue: stop.blue)
     }
 }
 
@@ -367,8 +370,8 @@ struct NextUpWidget: Widget {
                     MetalCardBackground()
                 }
         }
-        .configurationDisplayName("Next Up")
-        .description("打开通知中心，看接下来最值得关注的几件事。")
+        .configurationDisplayName(Copy.text(.windowTitle, AppLanguage.resolved))
+        .description(Copy.text(.widgetDescription, AppLanguage.resolved))
         .supportedFamilies([.systemMedium, .systemLarge])
     }
 }

@@ -9,6 +9,7 @@ final class TaskStore: ObservableObject {
     @Published var notice: String?
     @Published var highlightedID: UUID?
     @Published private(set) var settlingIDs: Set<UUID> = []
+    @Published private(set) var language = AppLanguage.resolved
     private var repository: TodoRepository?
     private var settleTask: Task<Void, Never>?
 
@@ -122,7 +123,7 @@ final class TaskStore: ObservableObject {
             let repository = try currentRepository()
             _ = try repository.restoreFromBackup()
             reload()
-            notice = "已从最近的备份恢复。"
+            notice = Copy.text(.restored, language)
         } catch let error as StoreError {
             loadError = error
         } catch {
@@ -140,7 +141,7 @@ final class TaskStore: ObservableObject {
         guard url.host == "task" else { return }
         let rawID = url.path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         guard let id = UUID(uuidString: rawID) else {
-            notice = "这个链接无法识别。"
+            notice = Copy.text(.unrecognizedLink, language)
             return
         }
         if document.items.contains(where: { $0.id == id }) {
@@ -148,7 +149,7 @@ final class TaskStore: ObservableObject {
             highlightedID = id
         } else {
             highlightedID = nil
-            notice = "这条任务已经不在了。"
+            notice = Copy.text(.missingTask, language)
         }
     }
 
@@ -177,6 +178,18 @@ final class TaskStore: ObservableObject {
         let repository = try TodoRepository.localStore()
         self.repository = repository
         return repository
+    }
+
+    func selectLanguage(_ language: AppLanguage) {
+        do {
+            try AppPreferences.save(language)
+            self.language = language
+            reloadWidget()
+        } catch let error as StoreError {
+            notice = error.message
+        } catch {
+            notice = StoreError.writeFailed.message
+        }
     }
 
     private func reloadWidget() {

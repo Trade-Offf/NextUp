@@ -87,19 +87,19 @@ public struct TaskAuxiliary: Equatable, Sendable {
 }
 
 public enum TaskAuxiliaryText {
-    public static func make(status: TodoStatus, dueDate: String?, now: Date, calendar: Calendar) -> TaskAuxiliary {
+    public static func make(status: TodoStatus, dueDate: String?, now: Date, calendar: Calendar, language: AppLanguage = .resolved) -> TaskAuxiliary {
         let bucket = DueDate.bucket(dueDate, now: now, calendar: calendar)
         switch (status, bucket) {
         case (.done, _):
             return TaskAuxiliary(text: nil, emphasis: .neutral)
         case (_, .overdue):
-            return TaskAuxiliary(text: "已逾期", emphasis: .overdue)
+            return TaskAuxiliary(text: Copy.text(.overdue, language), emphasis: .overdue)
         case (_, .today):
-            return TaskAuxiliary(text: "今天", emphasis: .neutral)
+            return TaskAuxiliary(text: Copy.text(.today, language), emphasis: .neutral)
         case (_, .upcoming):
             return TaskAuxiliary(text: DueDate.monthDayLabel(dueDate), emphasis: .neutral)
         case (.waiting, .undated):
-            return TaskAuxiliary(text: "等待反馈", emphasis: .neutral)
+            return TaskAuxiliary(text: Copy.text(.waiting, language), emphasis: .neutral)
         case (.todo, .undated):
             return TaskAuxiliary(text: nil, emphasis: .neutral)
         }

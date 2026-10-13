@@ -13,27 +13,8 @@ public enum StoreError: Error, Equatable, Sendable {
     case restoreNotNeeded
 
     public var message: String {
-        switch self {
-        case .containerUnavailable:
-            // return "无法访问共享数据。请检查签名和 App Group 配置。"
-            return "无法访问本地任务数据。"
-        case .corrupted:
-            return "任务数据已损坏，原文件已保留。"
-        case .unsupportedSchema(let found, let supported):
-            return "数据版本 \(found) 不受支持（当前支持 \(supported)）。未改写原文件。"
-        case .notFound:
-            return "任务不存在或已被删除。"
-        case .invalidTitle:
-            return "标题不能为空，且不能超过 200 个字符。"
-        case .invalidDueDate:
-            return "截止日期无效。"
-        case .writeFailed:
-            return "保存失败，请重试。"
-        case .backupUnavailable:
-            return "没有可用的备份。"
-        case .restoreNotNeeded:
-            return "当前数据可以读取，未用备份覆盖。"
-        }
+        // 有 Apple ID 和 App Group 后再改回共享数据那句报错。
+        Copy.storeError(self, AppLanguage.resolved)
     }
 }
 

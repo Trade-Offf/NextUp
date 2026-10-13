@@ -32,28 +32,32 @@ final class DueDateTests: XCTestCase {
         let now = date(2026, 10, 12, 9, 0, calendar: calendar)
 
         XCTAssertEqual(
-            TaskAuxiliaryText.make(status: .todo, dueDate: "2026-10-11", now: now, calendar: calendar),
+            TaskAuxiliaryText.make(status: .todo, dueDate: "2026-10-11", now: now, calendar: calendar, language: .zhHans),
             TaskAuxiliary(text: "已逾期", emphasis: .overdue)
         )
         XCTAssertEqual(
-            TaskAuxiliaryText.make(status: .todo, dueDate: "2026-10-12", now: now, calendar: calendar),
+            TaskAuxiliaryText.make(status: .todo, dueDate: "2026-10-12", now: now, calendar: calendar, language: .zhHans),
             TaskAuxiliary(text: "今天", emphasis: .neutral)
         )
         XCTAssertEqual(
-            TaskAuxiliaryText.make(status: .todo, dueDate: "2026-10-14", now: now, calendar: calendar),
+            TaskAuxiliaryText.make(status: .todo, dueDate: "2026-10-14", now: now, calendar: calendar, language: .zhHans),
             TaskAuxiliary(text: "10/14", emphasis: .neutral)
         )
         XCTAssertEqual(
-            TaskAuxiliaryText.make(status: .todo, dueDate: nil, now: now, calendar: calendar).text,
+            TaskAuxiliaryText.make(status: .todo, dueDate: nil, now: now, calendar: calendar, language: .zhHans).text,
             nil
         )
         XCTAssertEqual(
-            TaskAuxiliaryText.make(status: .waiting, dueDate: nil, now: now, calendar: calendar).text,
+            TaskAuxiliaryText.make(status: .waiting, dueDate: nil, now: now, calendar: calendar, language: .zhHans).text,
             "等待反馈"
         )
         XCTAssertEqual(
-            TaskAuxiliaryText.make(status: .waiting, dueDate: "2026-10-11", now: now, calendar: calendar).text,
+            TaskAuxiliaryText.make(status: .waiting, dueDate: "2026-10-11", now: now, calendar: calendar, language: .zhHans).text,
             "已逾期"
+        )
+        XCTAssertEqual(
+            TaskAuxiliaryText.make(status: .todo, dueDate: "2026-10-11", now: now, calendar: calendar, language: .english).text,
+            "Overdue"
         )
     }
 
