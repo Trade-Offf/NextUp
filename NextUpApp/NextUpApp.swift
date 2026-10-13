@@ -12,7 +12,12 @@ struct NextUpApp: App {
         }
         .defaultSize(width: 560, height: 480)
 
-        MenuBarExtra("Next Up", systemImage: "checklist") {
+        Settings {
+            SettingsView()
+                .environmentObject(store)
+        }
+
+        MenuBarExtra(Copy.text(.windowTitle, store.language), systemImage: "checklist") {
             QuickAddMenu()
                 .environmentObject(store)
         }
