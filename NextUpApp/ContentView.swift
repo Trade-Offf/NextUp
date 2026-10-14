@@ -623,6 +623,7 @@ private struct ElasticTaskRow: View {
     @State private var suppressTap = false
     @State private var editing = false
     @State private var editTitle = ""
+    @State private var pickingDeadline = false
     @State private var parentCheckScale: CGFloat = 1
     @FocusState private var editFocused: Bool
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -659,6 +660,17 @@ private struct ElasticTaskRow: View {
         .simultaneousGesture(editing ? nil : pointer)
         .contextMenu {
             Button(Copy.text(.edit, store.language)) { beginEditing() }
+            Menu(Copy.text(.deadline, store.language)) {
+                Button(Copy.text(.dueToday, store.language)) { setDueToday() }
+                Button(Copy.text(.pickDateTime, store.language)) {
+                    DispatchQueue.main.async { pickingDeadline = true }
+                }
+                Divider()
+                Button(Copy.text(.clearDeadline, store.language)) {
+                    store.setDeadline(id: item.id, dueDate: nil, dueTime: nil)
+                }
+                .disabled(item.dueDate == nil && item.dueTime == nil)
+            }
             Button(deleteLabel, role: .destructive) {
                 let ids = deletionIDs
                 let run = { store.delete(ids: ids) }
@@ -668,6 +680,20 @@ private struct ElasticTaskRow: View {
                     NextUpChrome.perform(NextUpChrome.settle, reduceMotion: reduceMotion, run)
                 }
             }
+        }
+        .sheet(isPresented: $pickingDeadline) {
+            DeadlinePicker(
+                item: item,
+                language: store.language,
+                onConfirm: { date in
+                    pickingDeadline = false
+                    let calendar = Calendar.current
+                    guard let day = DueDate.dayString(from: date, calendar: calendar),
+                          let time = DueDate.timeString(from: date, calendar: calendar) else { return }
+                    store.setDeadline(id: item.id, dueDate: day, dueTime: time)
+                },
+                onCancel: { pickingDeadline = false }
+            )
         }
         .accessibilityElement(children: .contain)
         .onChange(of: editing) { _, isEditing in
@@ -724,12 +750,24 @@ private struct ElasticTaskRow: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
             Spacer(minLength: 12)
-            if item.status != .done, let text = trailing {
-                Text(text)
-                    .font(.system(size: NextUpChrome.dateSize).monospacedDigit())
-                    .foregroundStyle(isOverdue ? Color.orange : Color.secondary)
-                    .lineLimit(1)
-                    .fixedSize(horizontal: true, vertical: false)
+            if item.status != .done {
+                TimelineView(.everyMinute) { context in
+                    let auxiliary = TaskAuxiliaryText.make(
+                        status: item.status,
+                        dueDate: item.dueDate,
+                        dueTime: item.dueTime,
+                        now: context.date,
+                        calendar: .current,
+                        language: store.language
+                    )
+                    if let text = auxiliary.text {
+                        Text(text)
+                            .font(.system(size: NextUpChrome.dateSize).monospacedDigit())
+                            .foregroundStyle(auxiliary.emphasis == .overdue ? Color.orange : Color.secondary)
+                            .lineLimit(1)
+                            .fixedSize(horizontal: true, vertical: false)
+                    }
+                }
             }
         }
         .padding(.horizontal, 12)
@@ -762,13 +800,9 @@ private struct ElasticTaskRow: View {
         }
     }
 
-    private var trailing: String? {
-        let auxiliary = TaskAuxiliaryText.make(status: item.status, dueDate: item.dueDate, now: Date(), calendar: .current, language: store.language)
-        return auxiliary.text
-    }
-
-    private var isOverdue: Bool {
-        TaskAuxiliaryText.make(status: item.status, dueDate: item.dueDate, now: Date(), calendar: .current, language: store.language).emphasis == .overdue
+    private func setDueToday() {
+        guard let day = DueDate.dayString(from: Date(), calendar: .current) else { return }
+        store.setDeadline(id: item.id, dueDate: day, dueTime: nil)
     }
 
     private var hasChildren: Bool {
@@ -954,5 +988,50 @@ private struct KeyWindowProbe: NSViewRepresentable {
         @objc private func report() {
             onChange?(window, window?.isKeyWindow ?? false)
         }
+    }
+}
+
+private struct DeadlinePicker: View {
+    let language: AppLanguage
+    var onConfirm: (Date) -> Void
+    var onCancel: () -> Void
+    @State private var selection: Date
+
+    init(item: TodoItem, language: AppLanguage, onConfirm: @escaping (Date) -> Void, onCancel: @escaping () -> Void) {
+        self.language = language
+        self.onConfirm = onConfirm
+        self.onCancel = onCancel
+        _selection = State(initialValue: Self.startingDate(for: item))
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            DatePicker(
+                Copy.text(.deadline, language),
+                selection: $selection,
+                displayedComponents: [.date, .hourAndMinute]
+            )
+            HStack {
+                Spacer()
+                Button(Copy.text(.cancel, language), action: onCancel)
+                Button(Copy.text(.ok, language)) { onConfirm(selection) }
+                    .keyboardShortcut(.defaultAction)
+            }
+        }
+        .padding(16)
+        .frame(width: 280)
+    }
+
+    private static func startingDate(for item: TodoItem) -> Date {
+        let calendar = Calendar.current
+        if let instant = DueDate.clockInstant(item.dueDate, time: item.dueTime, calendar: calendar) {
+            return instant
+        }
+        if let day = item.dueDate,
+           let morning = DueDate.clockInstant(day, time: "09:00", calendar: calendar),
+           morning > Date() {
+            return morning
+        }
+        return calendar.date(byAdding: .hour, value: 1, to: Date()) ?? Date()
     }
 }

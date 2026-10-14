@@ -22,6 +22,18 @@ final class WidgetFitTests: XCTestCase {
         XCTAssertEqual(grouped, WidgetFit.Choice(shown: 2, more: 1))
     }
 
+    func testParentRowsDoNotReduceTheRemainingCount() {
+        let choice = WidgetFit.choose(
+            rowCount: 2,
+            total: 2,
+            groupStarts: [false, false],
+            height: 400,
+            metrics: metrics,
+            countsTowardTotal: [false, true]
+        )
+        XCTAssertEqual(choice, WidgetFit.Choice(shown: 2, more: 1))
+    }
+
     func testHiddenRowsStillCountWhenThePreparedListIsShorter() {
         let choice = WidgetFit.choose(rowCount: 4, total: 11, groupStarts: [false, false, false, false], height: 400, metrics: metrics)
         XCTAssertEqual(choice, WidgetFit.Choice(shown: 4, more: 7))

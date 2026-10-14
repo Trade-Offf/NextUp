@@ -63,6 +63,13 @@ final class TodoSortingTests: XCTestCase {
         XCTAssertEqual(ordered.map(\.title), ["同一时刻较小 ID", "先创建", "后创建"])
     }
 
+    func testEarlierClockSortsBeforeADateOnlyDeadlineOnTheSameDay() {
+        let timed = StoreFixtures.makeItem(title: "上午", dueDate: "2026-10-12", dueTime: "09:30", createdAt: stamp(4))
+        let restOfDay = StoreFixtures.makeItem(title: "今天", dueDate: "2026-10-12", createdAt: stamp(1))
+        let ordered = TodoSorting.incomplete([restOfDay, timed], now: now, calendar: calendar)
+        XCTAssertEqual(ordered.map(\.title), ["上午", "今天"])
+    }
+
     func testWidgetLimitShowsThreeWithoutPaddingAndLetsWaitingFillGaps() {
         let todos = (0..<2).map {
             StoreFixtures.makeItem(title: "待办\($0)", dueDate: "2026-10-1\($0)", createdAt: stamp($0))

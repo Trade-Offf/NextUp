@@ -21,7 +21,7 @@ struct WidgetRow: Identifiable {
     }
 
     init(item: TodoItem, now: Date, calendar: Calendar, depth: Int, canComplete: Bool, language: AppLanguage = .resolved) {
-        let auxiliary = TaskAuxiliaryText.make(status: item.status, dueDate: item.dueDate, now: now, calendar: calendar, language: language)
+        let auxiliary = TaskAuxiliaryText.make(status: item.status, dueDate: item.dueDate, dueTime: item.dueTime, now: now, calendar: calendar, language: language)
         self.id = item.id.uuidString
         self.title = WidgetRow.singleLine(item.title)
         self.trailing = auxiliary.text ?? ""
@@ -39,16 +39,18 @@ struct WidgetEntry: TimelineEntry {
     let date: Date
     let unfinishedCount: Int
     let stats: WidgetStats
-    let rows: [WidgetRow]
     let largeRows: [WidgetRow]
     let isReadFailure: Bool
+    let celebrates: Bool
+
+    static let celebrationDuration: TimeInterval = 4
 
     static func empty(date: Date) -> WidgetEntry {
-        WidgetEntry(date: date, unfinishedCount: 0, stats: .zero, rows: [], largeRows: [], isReadFailure: false)
+        WidgetEntry(date: date, unfinishedCount: 0, stats: .zero, largeRows: [], isReadFailure: false, celebrates: false)
     }
 
     static func readFailure(date: Date) -> WidgetEntry {
-        WidgetEntry(date: date, unfinishedCount: 0, stats: .zero, rows: [], largeRows: [], isReadFailure: true)
+        WidgetEntry(date: date, unfinishedCount: 0, stats: .zero, largeRows: [], isReadFailure: true, celebrates: false)
     }
 
     static var preview: WidgetEntry {
@@ -57,11 +59,6 @@ struct WidgetEntry: TimelineEntry {
             date: .now,
             unfinishedCount: 5,
             stats: WidgetStats(unfinished: 5, overdue: 1, today: 2, upcoming: 1, undated: 1),
-            rows: [
-                WidgetRow(id: "preview-1", title: "与 Allen 对齐 BD 排期", trailing: "10/14", isOverdue: false),
-                WidgetRow(id: "preview-2", title: "确认 CashBack 发版事项", trailing: "10/15", isOverdue: false),
-                WidgetRow(id: "preview-3", title: "更新 i18n 方案", trailing: waiting, isOverdue: false)
-            ],
             largeRows: [
                 WidgetRow(id: "preview-1", title: "与 Allen 对齐 BD 排期", trailing: "10/14", isOverdue: false, canComplete: false),
                 WidgetRow(id: "preview-1a", title: "确认接口字段", trailing: "", isOverdue: false, depth: 1),
@@ -69,7 +66,8 @@ struct WidgetEntry: TimelineEntry {
                 WidgetRow(id: "preview-2", title: "确认 CashBack 发版事项", trailing: "10/15", isOverdue: false),
                 WidgetRow(id: "preview-3", title: "更新 i18n 方案", trailing: waiting, isOverdue: false)
             ],
-            isReadFailure: false
+            isReadFailure: false,
+            celebrates: false
         )
     }
 
@@ -79,14 +77,6 @@ struct WidgetEntry: TimelineEntry {
             date: .now,
             unfinishedCount: 1,
             stats: WidgetStats(unfinished: 1, overdue: 1, today: 0, upcoming: 0, undated: 0),
-            rows: [
-                WidgetRow(
-                    id: "preview-long",
-                    title: "这是一条非常长的任务标题，用来确认右侧日期不会被挤出卡片",
-                    trailing: overdue,
-                    isOverdue: true
-                )
-            ],
             largeRows: [
                 WidgetRow(
                     id: "preview-long",
@@ -95,7 +85,8 @@ struct WidgetEntry: TimelineEntry {
                     isOverdue: true
                 )
             ],
-            isReadFailure: false
+            isReadFailure: false,
+            celebrates: false
         )
     }
 }
@@ -111,25 +102,40 @@ struct NextUpProvider: TimelineProvider {
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<WidgetEntry>) -> Void) {
         let now = Date()
-        let entry = loadEntry(now: now)
         let nextMidnight = DueDate.nextLocalMidnight(after: now, calendar: .current)
-        completion(Timeline(entries: [entry], policy: .after(nextMidnight)))
+        guard let items = try? TodoRepository.localStore().load().items else {
+            completion(Timeline(entries: [.readFailure(date: now)], policy: .after(nextMidnight)))
+            return
+        }
+        var moments: [Date] = []
+        if let latest = items.compactMap(\.completedAt).max() {
+            let until = latest.addingTimeInterval(WidgetEntry.celebrationDuration)
+            if until > now {
+                moments.append(until)
+            }
+        }
+        moments.append(contentsOf: TodoSorting.clockDeadlines(items, after: now, before: nextMidnight, calendar: .current))
+        var entries = [loadEntry(now: now, items: items)]
+        for moment in moments.sorted() where moment > (entries.last?.date ?? now) {
+            entries.append(loadEntry(now: moment, items: items))
+        }
+        completion(Timeline(entries: entries, policy: .after(nextMidnight)))
     }
 
-    private func loadEntry(now: Date = Date()) -> WidgetEntry {
+    private func loadEntry(now: Date = Date(), items: [TodoItem]? = nil) -> WidgetEntry {
         do {
-            // let repository = try TodoRepository.inAppGroup()
-            let repository = try TodoRepository.localStore()
-            let items = try repository.load().items
+            let resolved = try items ?? TodoRepository.localStore().load().items
             let calendar = Calendar.current
-            let stats = TodoSorting.widgetStats(items, now: now, calendar: calendar)
+            let stats = TodoSorting.widgetStats(resolved, now: now, calendar: calendar)
+            let latest = resolved.compactMap(\.completedAt).max()
+            let celebrates = latest.map { now.timeIntervalSince($0) < WidgetEntry.celebrationDuration && now.timeIntervalSince($0) > -1 } ?? false
             return WidgetEntry(
                 date: now,
                 unfinishedCount: stats.unfinished,
                 stats: stats,
-                rows: [],
-                largeRows: largeWidgetRows(items, now: now, calendar: calendar),
-                isReadFailure: false
+                largeRows: largeWidgetRows(resolved, now: now, calendar: calendar),
+                isReadFailure: false,
+                celebrates: celebrates
             )
         } catch {
             return .readFailure(date: now)
@@ -173,7 +179,7 @@ struct NextUpWidgetView: View {
     private var language: AppLanguage { AppLanguage.resolved }
 
     private var visibleRows: [WidgetRow] {
-        family == .systemLarge ? entry.largeRows : entry.rows
+        entry.largeRows
     }
 
     var body: some View {
@@ -190,12 +196,19 @@ struct NextUpWidgetView: View {
     private var mediumBody: some View {
         VStack(alignment: .leading, spacing: 0) {
             header(showsCount: false)
-            if entry.isReadFailure {
-                failure
-            } else if entry.stats.unfinished == 0 {
-                empty
-            } else {
-                statistics
+            Group {
+                if entry.isReadFailure {
+                    failure
+                } else if entry.stats.unfinished == 0 {
+                    empty
+                } else {
+                    statistics
+                }
+            }
+            .overlay(alignment: .topTrailing) {
+                if entry.isReadFailure || entry.stats.unfinished == 0 {
+                    brandBadge
+                }
             }
         }
     }
@@ -232,18 +245,20 @@ struct NextUpWidgetView: View {
     }
 
     private var statistics: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Spacer(minLength: 4)
-            HStack(alignment: .firstTextBaseline, spacing: 8) {
-                Text("\(entry.stats.unfinished)")
-                    .font(.system(size: 36, weight: .semibold).monospacedDigit())
-                    .foregroundStyle(.primary)
-                    .widgetAccentable()
-                Text(Copy.text(.widgetOpenItems, language))
-                    .font(.system(size: NextUpChrome.dateSize))
-                    .foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(alignment: .center, spacing: 8) {
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text("\(entry.stats.unfinished)")
+                        .font(.system(size: 36, weight: .semibold).monospacedDigit())
+                        .foregroundStyle(.primary)
+                        .widgetAccentable()
+                    Text(Copy.text(.widgetOpenItems, language))
+                        .font(.system(size: NextUpChrome.dateSize))
+                        .foregroundStyle(.secondary)
+                }
+                Spacer(minLength: 8)
+                brandBadge
             }
-            Spacer(minLength: 8)
             HStack(alignment: .top, spacing: 0) {
                 statCell(Copy.text(.overdue, language), entry.stats.overdue, emphasized: entry.stats.overdue > 0)
                 statCell(Copy.text(.today, language), entry.stats.today, emphasized: false)
@@ -289,7 +304,8 @@ struct NextUpWidgetView: View {
             total: entry.unfinishedCount,
             groupStarts: starts,
             height: max(0, height - 4),
-            metrics: Self.rowMetrics
+            metrics: Self.rowMetrics,
+            countsTowardTotal: visibleRows.map(\.canComplete)
         )
         return (Array(visibleRows.prefix(choice.shown)), choice.more)
     }
@@ -338,6 +354,14 @@ struct NextUpWidgetView: View {
             .lineLimit(1)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.top, NextUpChrome.widgetHeaderGap)
+    }
+
+    private var brandBadge: some View {
+        Image(entry.celebrates ? "WidgetBadgeDone" : "WidgetBadge")
+            .resizable()
+            .scaledToFit()
+            .frame(width: 44, height: 44)
+            .accessibilityHidden(true)
     }
 
     private func header(showsCount: Bool) -> some View {

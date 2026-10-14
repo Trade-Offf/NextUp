@@ -54,17 +54,20 @@ struct QuickAddMenu: View {
                 Color.primary.opacity(0.05),
                 in: RoundedRectangle(cornerRadius: 8, style: .continuous)
             )
-            if !upcoming.isEmpty {
-                VStack(alignment: .leading, spacing: 8) {
-                    ForEach(upcoming) { item in
-                        Button {
-                            openTask(item.id)
-                        } label: {
-                            upcomingRow(item)
-                                .padding(.vertical, 6)
-                                .nextUpClickable(cornerRadius: 8, horizontalPadding: 6)
+            TimelineView(.everyMinute) { context in
+                let upcoming = TodoSorting.widgetItems(store.document.items, limit: 3, now: context.date, calendar: .current)
+                if !upcoming.isEmpty {
+                    VStack(alignment: .leading, spacing: 8) {
+                        ForEach(upcoming) { item in
+                            Button {
+                                openTask(item.id)
+                            } label: {
+                                upcomingRow(item, now: context.date)
+                                    .padding(.vertical, 6)
+                                    .nextUpClickable(cornerRadius: 8, horizontalPadding: 6)
+                            }
+                            .buttonStyle(.plain)
                         }
-                        .buttonStyle(.plain)
                     }
                 }
             }
@@ -104,12 +107,8 @@ struct QuickAddMenu: View {
         .onDisappear { store.setFieldOwnsUndo("quick-add", active: false) }
     }
 
-    private var upcoming: [TodoItem] {
-        TodoSorting.widgetItems(store.document.items, limit: 3, now: Date(), calendar: .current)
-    }
-
-    private func upcomingRow(_ item: TodoItem) -> some View {
-        let auxiliary = TaskAuxiliaryText.make(status: item.status, dueDate: item.dueDate, now: Date(), calendar: .current, language: store.language)
+    private func upcomingRow(_ item: TodoItem, now: Date) -> some View {
+        let auxiliary = TaskAuxiliaryText.make(status: item.status, dueDate: item.dueDate, dueTime: item.dueTime, now: now, calendar: .current, language: store.language)
         return HStack(alignment: .firstTextBaseline, spacing: 12) {
             Text(NextUpChrome.plainTitle(item.title))
                 .font(.system(size: NextUpChrome.taskSize))

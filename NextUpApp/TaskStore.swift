@@ -114,6 +114,28 @@ final class TaskStore: ObservableObject {
         return true
     }
 
+    func setDeadline(id: UUID, dueDate: String?, dueTime: String?) {
+        guard let item = document.items.first(where: { $0.id == id }) else { return }
+        let previousDate = item.dueDate
+        let previousTime = item.dueTime
+        guard writeDeadline(id: id, dueDate: dueDate, dueTime: dueTime) else { return }
+        guard let latest = document.items.first(where: { $0.id == id }) else { return }
+        guard latest.dueDate != previousDate || latest.dueTime != previousTime else { return }
+        let name = Copy.text(.undoDeadline, language)
+        let writtenDate = latest.dueDate
+        let writtenTime = latest.dueTime
+        register(name) {
+            $0.revertDeadline(
+                id: id,
+                dueDate: previousDate,
+                dueTime: previousTime,
+                thenDate: writtenDate,
+                thenTime: writtenTime,
+                name: name
+            )
+        }
+    }
+
     func move(id: UUID, before targetID: UUID?) {
         let previous = nextSibling(after: id)
         performMove(id: id, before: targetID, undoBefore: previous, name: Copy.text(.undoMove, language))
@@ -666,6 +688,39 @@ final class TaskStore: ObservableObject {
         }
     }
 
+    private func revertDeadline(id: UUID, dueDate: String?, dueTime: String?, thenDate: String?, thenTime: String?, name: String) {
+        guard writeDeadline(id: id, dueDate: dueDate, dueTime: dueTime) else { return }
+        register(name) {
+            $0.revertDeadline(id: id, dueDate: thenDate, dueTime: thenTime, thenDate: dueDate, thenTime: dueTime, name: name)
+        }
+    }
+
+    @discardableResult
+    private func writeDeadline(id: UUID, dueDate: String?, dueTime: String?) -> Bool {
+        guard let item = document.items.first(where: { $0.id == id }) else { return false }
+        do {
+            let repository = try currentRepository()
+            let edit = TodoEdit(
+                base: item,
+                title: item.title,
+                project: item.project,
+                assignee: item.assignee,
+                dueDate: dueDate,
+                dueTime: dueTime,
+                status: item.status
+            )
+            _ = try repository.apply(edit, now: Date())
+            reload()
+            return true
+        } catch let error as StoreError {
+            notice = error.message
+            return false
+        } catch {
+            loadError = .writeFailed
+            return false
+        }
+    }
+
     private func revertTitle(id: UUID, to title: String, then redo: String, name: String) {
         guard writeTitle(id: id, title: title) else { return }
         register(name) { $0.revertTitle(id: id, to: redo, then: title, name: name) }
@@ -682,6 +737,7 @@ final class TaskStore: ObservableObject {
                 project: item.project,
                 assignee: item.assignee,
                 dueDate: item.dueDate,
+                dueTime: item.dueTime,
                 status: item.status
             )
             _ = try repository.apply(edit, now: Date())

@@ -72,6 +72,32 @@ final class DueDateTests: XCTestCase {
         XCTAssertEqual(parts.hour, 0)
         XCTAssertEqual(parts.minute, 0)
     }
+
+    func testClockDeadlineBecomesOverdueAtThatMinute() {
+        let calendar = gregorian("Asia/Shanghai")
+        let before = date(2026, 10, 14, 14, 59, calendar: calendar)
+        let atDeadline = date(2026, 10, 14, 15, 0, calendar: calendar)
+        let nextMorning = date(2026, 10, 15, 9, 0, calendar: calendar)
+
+        XCTAssertEqual(DueDate.bucket("2026-10-14", time: "15:00", now: before, calendar: calendar), .today)
+        XCTAssertEqual(DueDate.bucket("2026-10-14", time: "15:00", now: atDeadline, calendar: calendar), .overdue)
+        XCTAssertEqual(DueDate.bucket("2026-10-14", now: atDeadline, calendar: calendar), .today)
+        XCTAssertEqual(DueDate.bucket("2026-10-15", time: "10:00", now: atDeadline, calendar: calendar), .upcoming)
+        XCTAssertEqual(DueDate.bucket("2026-10-15", time: "10:00", now: nextMorning, calendar: calendar), .today)
+        XCTAssertEqual(DueDate.bucket(nil, time: nil, now: before, calendar: calendar), .undated)
+        XCTAssertNil(DueDate.canonicalTime("25:00"))
+        XCTAssertThrowsError(try TodoItem.normalizeDueTime("25:00")) { error in
+            XCTAssertEqual(error as? StoreError, .invalidDueDate)
+        }
+        XCTAssertEqual(
+            TaskAuxiliaryText.make(status: .todo, dueDate: "2026-10-14", dueTime: "15:00", now: before, calendar: calendar, language: .zhHans).text,
+            "15:00"
+        )
+        XCTAssertEqual(
+            TaskAuxiliaryText.make(status: .todo, dueDate: "2026-10-20", dueTime: "09:30", now: before, calendar: calendar, language: .zhHans).text,
+            "10/20 09:30"
+        )
+    }
 }
 
 final class TodoItemTests: XCTestCase {
@@ -98,6 +124,15 @@ final class TodoItemTests: XCTestCase {
         XCTAssertEqual(item.status, .waiting)
         XCTAssertNil(item.completedAt)
     }
+
+    func testOlderFilesWithoutAClockStillDecode() throws {
+        let json = """
+        {"id":"00000000-0000-0000-0000-000000000001","title":"旧任务","status":"todo","sortOrder":0,"createdAt":"2026-10-14T01:00:00Z","updatedAt":"2026-10-14T01:00:00Z","dueDate":"2026-10-14"}
+        """
+        let item = try StoreCoding.decoder.decode(TodoItem.self, from: Data(json.utf8))
+        XCTAssertEqual(item.dueDate, "2026-10-14")
+        XCTAssertNil(item.dueTime)
+    }
 }
 
 enum StoreFixtures {
@@ -123,6 +158,7 @@ enum StoreFixtures {
         title: String = "任务",
         status: TodoStatus = .todo,
         dueDate: String? = nil,
+        dueTime: String? = nil,
         sortOrder: Int = 0,
         createdAt: Date = Date(timeIntervalSince1970: 1_700_000_000),
         id: UUID = UUID()
@@ -133,6 +169,7 @@ enum StoreFixtures {
             project: nil,
             assignee: nil,
             dueDate: dueDate,
+            dueTime: dueTime,
             status: status,
             sortOrder: sortOrder,
             createdAt: createdAt,
