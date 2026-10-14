@@ -49,4 +49,64 @@ final class TodoClearingTests: XCTestCase {
             WidgetStats(unfinished: 4, overdue: 1, today: 1, upcoming: 1, undated: 1)
         )
     }
+
+    func testWidgetStatsSkipsParentsThatHaveChildren() {
+        let parent = StoreFixtures.makeItem(title: "父任务", dueDate: "2026-10-14")
+        var todayChild = StoreFixtures.makeItem(title: "今天的子任务", dueDate: "2026-10-14")
+        todayChild.parentID = parent.id
+        var laterChild = StoreFixtures.makeItem(title: "以后的子任务", dueDate: "2026-10-20")
+        laterChild.parentID = parent.id
+        var doneChild = StoreFixtures.makeItem(title: "完成的子任务", status: .done, dueDate: "2026-10-14")
+        doneChild.parentID = parent.id
+        let alone = StoreFixtures.makeItem(title: "单独的")
+
+        XCTAssertEqual(
+            TodoSorting.widgetStats([parent, todayChild, laterChild, doneChild, alone], now: now, calendar: calendar),
+            WidgetStats(unfinished: 3, overdue: 0, today: 1, upcoming: 1, undated: 1)
+        )
+    }
+
+    func testWidgetStatsFollowClockDeadlinesAndLeaveUndatedItemsAlone() {
+        let before = StoreFixtures.date(2026, 10, 14, 14, 59, calendar: calendar)
+        let atDeadline = StoreFixtures.date(2026, 10, 14, 15, 0, calendar: calendar)
+        let items = [
+            StoreFixtures.makeItem(title: "三点", dueDate: "2026-10-14", dueTime: "15:00"),
+            StoreFixtures.makeItem(title: "明天上午", dueDate: "2026-10-15", dueTime: "10:00"),
+            StoreFixtures.makeItem(title: "没截止"),
+            StoreFixtures.makeItem(title: "纯日期今天", dueDate: "2026-10-14")
+        ]
+
+        XCTAssertEqual(
+            TodoSorting.widgetStats(items, now: before, calendar: calendar),
+            WidgetStats(unfinished: 4, overdue: 0, today: 2, upcoming: 1, undated: 1)
+        )
+        XCTAssertEqual(
+            TodoSorting.widgetStats(items, now: atDeadline, calendar: calendar),
+            WidgetStats(unfinished: 4, overdue: 1, today: 1, upcoming: 1, undated: 1)
+        )
+    }
+
+    func testClockDeadlinesIncludeParentLabelsButStatsSkipParents() {
+        let parent = StoreFixtures.makeItem(title: "父任务", dueDate: "2026-10-14", dueTime: "15:00")
+        var child = StoreFixtures.makeItem(title: "四点", dueDate: "2026-10-14", dueTime: "16:00")
+        child.parentID = parent.id
+        let past = StoreFixtures.makeItem(title: "已经过点", dueDate: "2026-10-14", dueTime: "08:00")
+        let tomorrow = StoreFixtures.makeItem(title: "明天", dueDate: "2026-10-15", dueTime: "10:00")
+        let midnight = DueDate.nextLocalMidnight(after: now, calendar: calendar)
+
+        let deadlines = TodoSorting.clockDeadlines(
+            [parent, child, past, tomorrow],
+            after: now,
+            before: midnight,
+            calendar: calendar
+        )
+        XCTAssertEqual(deadlines, [
+            DueDate.clockInstant("2026-10-14", time: "15:00", calendar: calendar)!,
+            DueDate.clockInstant("2026-10-14", time: "16:00", calendar: calendar)!
+        ])
+        XCTAssertEqual(
+            TodoSorting.widgetStats([parent, child, past, tomorrow], now: now, calendar: calendar),
+            WidgetStats(unfinished: 3, overdue: 1, today: 1, upcoming: 1, undated: 0)
+        )
+    }
 }

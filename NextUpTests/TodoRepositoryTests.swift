@@ -192,7 +192,7 @@ final class TodoRepositoryTests: XCTestCase {
         _ = try repository.setStatus(id: original.id, status: .waiting, now: now)
 
         let edited = try repository.apply(
-            TodoEdit(base: original, title: "新标题", project: "旧项目", assignee: nil, dueDate: "2026-10-20", status: .todo),
+            TodoEdit(base: original, title: "新标题", project: "旧项目", assignee: nil, dueDate: "2026-10-20", dueTime: original.dueTime, status: .todo),
             now: Date(timeIntervalSince1970: 1_762_000_200),
             calendar: calendar
         )

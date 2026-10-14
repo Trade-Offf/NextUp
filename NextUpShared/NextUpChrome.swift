@@ -35,10 +35,10 @@ public enum NextUpChrome {
     public static let hairlineOpacity: Double = 0.14
     public static let highlightHeight: CGFloat = 22
 
-    public static let widgetHeaderGap: CGFloat = 8
-    public static let widgetDividerTop: CGFloat = 8
-    public static let widgetDividerBottom: CGFloat = 6
-    public static let widgetRowGap: CGFloat = 6
+    public static let widgetHeaderGap: CGFloat = 6
+    public static let widgetDividerTop: CGFloat = 4
+    public static let widgetDividerBottom: CGFloat = 3
+    public static let widgetRowGap: CGFloat = 4
     public static let widgetGroupRowGap: CGFloat = 2
     public static let widgetIndent: CGFloat = 16
 

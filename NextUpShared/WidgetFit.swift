@@ -33,18 +33,26 @@ public enum WidgetFit {
         total: Int,
         groupStarts: [Bool],
         height: CGFloat,
-        metrics: Metrics
+        metrics: Metrics,
+        countsTowardTotal: [Bool]? = nil
     ) -> Choice {
         let unfinished = max(0, total)
         let available = max(0, rowCount)
         for shown in stride(from: available, through: 0, by: -1) {
-            let more = max(0, unfinished - shown)
+            let more = max(0, unfinished - counted(in: shown, countsTowardTotal: countsTowardTotal))
             let needed = self.height(shown: shown, groupStarts: groupStarts, includeFooter: more > 0, metrics: metrics)
             if needed <= height {
                 return Choice(shown: shown, more: more)
             }
         }
         return Choice(shown: 0, more: unfinished)
+    }
+
+    private static func counted(in shown: Int, countsTowardTotal: [Bool]?) -> Int {
+        guard let countsTowardTotal else { return shown }
+        return countsTowardTotal.prefix(shown).reduce(into: 0) { total, counts in
+            if counts { total += 1 }
+        }
     }
 
     public static func height(shown: Int, groupStarts: [Bool], includeFooter: Bool, metrics: Metrics) -> CGFloat {

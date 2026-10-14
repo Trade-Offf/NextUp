@@ -97,12 +97,15 @@ public struct TodoRepository: Sendable {
         let project = TodoItem.normalizeOptional(draft.project)
         let assignee = TodoItem.normalizeOptional(draft.assignee)
         let dueDate = try TodoItem.normalizeDueDate(draft.dueDate, calendar: calendar)
+        let dueTime = try TodoItem.normalizeDueTime(draft.dueTime)
+        if dueTime != nil && dueDate == nil { throw StoreError.invalidDueDate }
         return try mutate { document in
             try appendItem(
                 title: title,
                 project: project,
                 assignee: assignee,
                 dueDate: dueDate,
+                dueTime: dueTime,
                 status: draft.status,
                 parentID: draft.parentID,
                 now: draft.now,
@@ -117,10 +120,13 @@ public struct TodoRepository: Sendable {
         let project = TodoItem.normalizeOptional(edit.project)
         let assignee = TodoItem.normalizeOptional(edit.assignee)
         let dueDate = try TodoItem.normalizeDueDate(edit.dueDate, calendar: calendar)
+        let dueTime = try TodoItem.normalizeDueTime(edit.dueTime)
+        if dueTime != nil && dueDate == nil { throw StoreError.invalidDueDate }
         let baseTitle = try TodoItem.normalizeTitle(edit.base.title)
         let baseProject = TodoItem.normalizeOptional(edit.base.project)
         let baseAssignee = TodoItem.normalizeOptional(edit.base.assignee)
         let baseDueDate = try TodoItem.normalizeDueDate(edit.base.dueDate, calendar: calendar)
+        let baseDueTime = try TodoItem.normalizeDueTime(edit.base.dueTime)
 
         return try mutate { document in
             guard let index = document.items.firstIndex(where: { $0.id == edit.base.id }) else {
@@ -131,6 +137,7 @@ public struct TodoRepository: Sendable {
             if project != baseProject { latest.project = project }
             if assignee != baseAssignee { latest.assignee = assignee }
             if dueDate != baseDueDate { latest.dueDate = dueDate }
+            if dueTime != baseDueTime { latest.dueTime = dueTime }
             if edit.status != edit.base.status {
                 latest.applyStatus(edit.status, now: now)
             }
@@ -325,6 +332,7 @@ public struct TodoRepository: Sendable {
         project: String?,
         assignee: String?,
         dueDate: String?,
+        dueTime: String? = nil,
         status: TodoStatus,
         parentID: UUID?,
         now: Date,
@@ -337,12 +345,15 @@ public struct TodoRepository: Sendable {
         let project = TodoItem.normalizeOptional(project)
         let assignee = TodoItem.normalizeOptional(assignee)
         let dueDate = try TodoItem.normalizeDueDate(dueDate, calendar: calendar)
+        let dueTime = try TodoItem.normalizeDueTime(dueTime)
+        if dueTime != nil && dueDate == nil { throw StoreError.invalidDueDate }
         var item = TodoItem(
             id: UUID(),
             title: title,
             project: project,
             assignee: assignee,
             dueDate: dueDate,
+            dueTime: dueTime,
             status: .todo,
             sortOrder: nextOrder,
             createdAt: now,

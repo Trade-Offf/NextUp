@@ -197,6 +197,11 @@ public enum Copy {
         case undoReopen
         case undoRename
         case undoMove
+        case undoDeadline
+        case deadline
+        case dueToday
+        case pickDateTime
+        case clearDeadline
         case tasksMenu
         case newTask
         case selectAllTasks
@@ -429,6 +434,11 @@ public enum Copy {
         .undoReopen: "重新打开",
         .undoRename: "重命名",
         .undoMove: "调整顺序",
+        .undoDeadline: "设置截止时间",
+        .deadline: "截止时间",
+        .dueToday: "今日",
+        .pickDateTime: "选择日期和时间…",
+        .clearDeadline: "清除截止时间",
         .tasksMenu: "任务",
         .newTask: "新任务",
         .selectAllTasks: "选择全部任务",
@@ -510,6 +520,11 @@ public enum Copy {
         .undoReopen: "Reopen",
         .undoRename: "Rename",
         .undoMove: "Reorder",
+        .undoDeadline: "Set Deadline",
+        .deadline: "Deadline",
+        .dueToday: "Today",
+        .pickDateTime: "Choose Date and Time…",
+        .clearDeadline: "Clear Deadline",
         .tasksMenu: "Tasks",
         .newTask: "New Task",
         .selectAllTasks: "Select All Tasks",

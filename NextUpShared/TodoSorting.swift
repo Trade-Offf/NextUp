@@ -20,10 +20,11 @@ public struct WidgetStats: Equatable, Sendable {
 
 public enum TodoSorting {
     public static func widgetStats(_ items: [TodoItem], now: Date, calendar: Calendar) -> WidgetStats {
+        let parents = Set(items.compactMap(\.parentID))
         var stats = WidgetStats.zero
-        for item in items where item.status != .done {
+        for item in items where item.status != .done && !parents.contains(item.id) {
             stats.unfinished += 1
-            switch DueDate.bucket(item.dueDate, now: now, calendar: calendar) {
+            switch DueDate.bucket(item.dueDate, time: item.dueTime, now: now, calendar: calendar) {
             case .overdue: stats.overdue += 1
             case .today: stats.today += 1
             case .upcoming: stats.upcoming += 1
@@ -31,6 +32,24 @@ public enum TodoSorting {
             }
         }
         return stats
+    }
+
+    /// 午夜前会到点的未完成任务。父任务不进统计，但大号列表仍显示它的行尾，所以这里包含父任务。
+    public static func clockDeadlines(_ items: [TodoItem], after now: Date, before limit: Date, calendar: Calendar) -> [Date] {
+        var seen: Set<Int> = []
+        var instants: [Date] = []
+        for item in items where item.status != .done {
+            guard let instant = DueDate.clockInstant(item.dueDate, time: item.dueTime, calendar: calendar),
+                  instant > now,
+                  instant < limit else {
+                continue
+            }
+            let key = Int(instant.timeIntervalSince1970.rounded())
+            if seen.insert(key).inserted {
+                instants.append(instant)
+            }
+        }
+        return instants.sorted()
     }
 
     public static func incompleteCount(_ items: [TodoItem]) -> Int {
@@ -73,14 +92,16 @@ public enum TodoSorting {
         let rightStatus = statusRank(rhs.status)
         if leftStatus != rightStatus { return leftStatus < rightStatus }
 
-        let leftBucket = DueDate.bucket(lhs.dueDate, now: now, calendar: calendar)
-        let rightBucket = DueDate.bucket(rhs.dueDate, now: now, calendar: calendar)
+        let leftBucket = DueDate.bucket(lhs.dueDate, time: lhs.dueTime, now: now, calendar: calendar)
+        let rightBucket = DueDate.bucket(rhs.dueDate, time: rhs.dueTime, now: now, calendar: calendar)
         if leftBucket != rightBucket { return leftBucket.rawValue < rightBucket.rawValue }
 
-        if leftBucket == .overdue || leftBucket == .upcoming {
-            let leftDate = lhs.dueDate ?? ""
-            let rightDate = rhs.dueDate ?? ""
-            if leftDate != rightDate { return leftDate < rightDate }
+        if leftBucket == .overdue || leftBucket == .today || leftBucket == .upcoming {
+            let leftDeadline = DueDate.sortInstant(lhs.dueDate, time: lhs.dueTime, calendar: calendar)
+            let rightDeadline = DueDate.sortInstant(rhs.dueDate, time: rhs.dueTime, calendar: calendar)
+            if let leftDeadline, let rightDeadline, leftDeadline != rightDeadline {
+                return leftDeadline < rightDeadline
+            }
         }
 
         if leftBucket == .undated, lhs.sortOrder != rhs.sortOrder {

@@ -14,6 +14,7 @@ public struct TodoItem: Codable, Equatable, Identifiable, Sendable {
     public var project: String?
     public var assignee: String?
     public var dueDate: String?
+    public var dueTime: String?
     public var status: TodoStatus
     public var sortOrder: Int
     public var createdAt: Date
@@ -27,6 +28,7 @@ public struct TodoItem: Codable, Equatable, Identifiable, Sendable {
         project: String?,
         assignee: String?,
         dueDate: String?,
+        dueTime: String? = nil,
         status: TodoStatus,
         sortOrder: Int,
         createdAt: Date,
@@ -39,6 +41,7 @@ public struct TodoItem: Codable, Equatable, Identifiable, Sendable {
         self.project = project
         self.assignee = assignee
         self.dueDate = dueDate
+        self.dueTime = dueTime
         self.status = status
         self.sortOrder = sortOrder
         self.createdAt = createdAt
@@ -48,7 +51,7 @@ public struct TodoItem: Codable, Equatable, Identifiable, Sendable {
     }
 
     private enum CodingKeys: String, CodingKey {
-        case id, title, project, assignee, dueDate, status, sortOrder, createdAt, updatedAt, completedAt, parentID
+        case id, title, project, assignee, dueDate, dueTime, status, sortOrder, createdAt, updatedAt, completedAt, parentID
     }
 
     public init(from decoder: Decoder) throws {
@@ -58,6 +61,7 @@ public struct TodoItem: Codable, Equatable, Identifiable, Sendable {
         project = try container.decodeIfPresent(String.self, forKey: .project)
         assignee = try container.decodeIfPresent(String.self, forKey: .assignee)
         dueDate = try container.decodeIfPresent(String.self, forKey: .dueDate)
+        dueTime = try container.decodeIfPresent(String.self, forKey: .dueTime)
         status = try container.decode(TodoStatus.self, forKey: .status)
         sortOrder = try container.decode(Int.self, forKey: .sortOrder)
         createdAt = try container.decode(Date.self, forKey: .createdAt)
@@ -73,6 +77,7 @@ public struct TodoItem: Codable, Equatable, Identifiable, Sendable {
         try container.encodeIfPresent(project, forKey: .project)
         try container.encodeIfPresent(assignee, forKey: .assignee)
         try container.encodeIfPresent(dueDate, forKey: .dueDate)
+        try container.encodeIfPresent(dueTime, forKey: .dueTime)
         try container.encode(status, forKey: .status)
         try container.encode(sortOrder, forKey: .sortOrder)
         try container.encode(createdAt, forKey: .createdAt)
@@ -104,6 +109,15 @@ public struct TodoItem: Codable, Equatable, Identifiable, Sendable {
         return canonical
     }
 
+    public static func normalizeDueTime(_ raw: String?) throws -> String? {
+        guard let raw else { return nil }
+        if raw.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return nil }
+        guard let canonical = DueDate.canonicalTime(raw) else {
+            throw StoreError.invalidDueDate
+        }
+        return canonical
+    }
+
     public mutating func applyStatus(_ newStatus: TodoStatus, now: Date) {
         if newStatus == .done {
             if status != .done || completedAt == nil {
@@ -121,6 +135,7 @@ public struct TodoDraft: Sendable {
     public var project: String?
     public var assignee: String?
     public var dueDate: String?
+    public var dueTime: String?
     public var status: TodoStatus
     public var parentID: UUID?
     public var now: Date
@@ -130,6 +145,7 @@ public struct TodoDraft: Sendable {
         project: String? = nil,
         assignee: String? = nil,
         dueDate: String? = nil,
+        dueTime: String? = nil,
         status: TodoStatus = .todo,
         parentID: UUID? = nil,
         now: Date = Date()
@@ -138,6 +154,7 @@ public struct TodoDraft: Sendable {
         self.project = project
         self.assignee = assignee
         self.dueDate = dueDate
+        self.dueTime = dueTime
         self.status = status
         self.parentID = parentID
         self.now = now
@@ -152,6 +169,7 @@ public struct TodoEdit: Sendable {
     public var project: String?
     public var assignee: String?
     public var dueDate: String?
+    public var dueTime: String?
     public var status: TodoStatus
 
     public init(
@@ -160,6 +178,7 @@ public struct TodoEdit: Sendable {
         project: String?,
         assignee: String?,
         dueDate: String?,
+        dueTime: String?,
         status: TodoStatus
     ) {
         self.base = base
@@ -167,6 +186,7 @@ public struct TodoEdit: Sendable {
         self.project = project
         self.assignee = assignee
         self.dueDate = dueDate
+        self.dueTime = dueTime
         self.status = status
     }
 }
