@@ -12,6 +12,9 @@
 		E80000000000000000000006 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E20000000000000000000038 /* ContentView.swift */; };
 		E80000000000000000000008 /* QuickAddMenu.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2000000000000000000003A /* QuickAddMenu.swift */; };
 		E80000000000000000000009 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2000000000000000000003B /* SettingsView.swift */; };
+		E8000000000000000000000B /* ShortcutAppKit.swift in Sources */ = {isa = PBXBuildFile; fileRef = E2000000000000000000003D /* ShortcutAppKit.swift */; };
+		E8000000000000000000000A /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = E2000000000000000000003C /* AppIcon.icon */; };
+		E81000000000000000000006 /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = E2000000000000000000003C /* AppIcon.icon */; };
 		E80000000000000000000002 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E20000000000000000000034 /* Assets.xcassets */; };
 		E80000000000000000000003 /* NextUpShared.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E40000000000000000000021 /* NextUpShared.framework */; };
 		E80000000000000000000004 /* NextUpWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = E30000000000000000000021 /* NextUpWidgetExtension.appex */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
@@ -28,12 +31,18 @@
 		E82000000000000000000006 /* OutlineParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = E40000000000000000000036 /* OutlineParser.swift */; };
 		E82000000000000000000007 /* NextUpChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = E40000000000000000000037 /* NextUpChrome.swift */; };
 		E82000000000000000000008 /* AppLanguage.swift in Sources */ = {isa = PBXBuildFile; fileRef = E40000000000000000000038 /* AppLanguage.swift */; };
+		E82000000000000000000009 /* ShortcutMap.swift in Sources */ = {isa = PBXBuildFile; fileRef = E40000000000000000000039 /* ShortcutMap.swift */; };
+		E8200000000000000000000A /* WidgetFit.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4000000000000000000003A /* WidgetFit.swift */; };
+		E8200000000000000000000B /* TodoClearing.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4000000000000000000003C /* TodoClearing.swift */; };
 		E83000000000000000000001 /* AppIdentityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E50000000000000000000031 /* AppIdentityTests.swift */; };
 		E83000000000000000000003 /* DueDateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E50000000000000000000032 /* DueDateTests.swift */; };
 		E83000000000000000000004 /* TodoSortingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E50000000000000000000033 /* TodoSortingTests.swift */; };
 		E83000000000000000000005 /* TodoRepositoryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E50000000000000000000034 /* TodoRepositoryTests.swift */; };
 		E83000000000000000000006 /* OutlineParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E50000000000000000000035 /* OutlineParserTests.swift */; };
 		E83000000000000000000007 /* AppLanguageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E50000000000000000000036 /* AppLanguageTests.swift */; };
+		E83000000000000000000008 /* ShortcutMapTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E50000000000000000000037 /* ShortcutMapTests.swift */; };
+		E83000000000000000000009 /* WidgetFitTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E50000000000000000000038 /* WidgetFitTests.swift */; };
+		E8300000000000000000000A /* TodoClearingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E50000000000000000000039 /* TodoClearingTests.swift */; };
 		E83000000000000000000002 /* NextUpShared.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E40000000000000000000021 /* NextUpShared.framework */; };
 /* End PBXBuildFile section */
 
@@ -89,6 +98,8 @@
 		E20000000000000000000038 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		E2000000000000000000003A /* QuickAddMenu.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickAddMenu.swift; sourceTree = "<group>"; };
 		E2000000000000000000003B /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		E2000000000000000000003D /* ShortcutAppKit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutAppKit.swift; sourceTree = "<group>"; };
+		E2000000000000000000003C /* AppIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.icon; path = AppIcon.icon; sourceTree = "<group>"; };
 		E20000000000000000000032 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		E20000000000000000000033 /* NextUpApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = NextUpApp.entitlements; sourceTree = "<group>"; };
 		E20000000000000000000036 /* NextUpApp.local.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = NextUpApp.local.entitlements; sourceTree = "<group>"; };
@@ -110,6 +121,9 @@
 		E40000000000000000000036 /* OutlineParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OutlineParser.swift; sourceTree = "<group>"; };
 		E40000000000000000000037 /* NextUpChrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NextUpChrome.swift; sourceTree = "<group>"; };
 		E40000000000000000000038 /* AppLanguage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLanguage.swift; sourceTree = "<group>"; };
+		E40000000000000000000039 /* ShortcutMap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutMap.swift; sourceTree = "<group>"; };
+		E4000000000000000000003A /* WidgetFit.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetFit.swift; sourceTree = "<group>"; };
+		E4000000000000000000003C /* TodoClearing.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodoClearing.swift; sourceTree = "<group>"; };
 		E50000000000000000000021 /* NextUpTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NextUpTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		E50000000000000000000031 /* AppIdentityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppIdentityTests.swift; sourceTree = "<group>"; };
 		E50000000000000000000032 /* DueDateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DueDateTests.swift; sourceTree = "<group>"; };
@@ -117,6 +131,9 @@
 		E50000000000000000000034 /* TodoRepositoryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodoRepositoryTests.swift; sourceTree = "<group>"; };
 		E50000000000000000000035 /* OutlineParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OutlineParserTests.swift; sourceTree = "<group>"; };
 		E50000000000000000000036 /* AppLanguageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppLanguageTests.swift; sourceTree = "<group>"; };
+		E50000000000000000000037 /* ShortcutMapTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutMapTests.swift; sourceTree = "<group>"; };
+		E50000000000000000000038 /* WidgetFitTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetFitTests.swift; sourceTree = "<group>"; };
+		E50000000000000000000039 /* TodoClearingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TodoClearingTests.swift; sourceTree = "<group>"; };
 		E70000000000000000000001 /* NextUp.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = NextUp.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -183,6 +200,8 @@
 				E20000000000000000000038 /* ContentView.swift */,
 				E2000000000000000000003A /* QuickAddMenu.swift */,
 				E2000000000000000000003B /* SettingsView.swift */,
+				E2000000000000000000003D /* ShortcutAppKit.swift */,
+				E2000000000000000000003C /* AppIcon.icon */,
 				E20000000000000000000032 /* Info.plist */,
 				E20000000000000000000033 /* NextUpApp.entitlements */,
 				E20000000000000000000036 /* NextUpApp.local.entitlements */,
@@ -216,6 +235,9 @@
 				E40000000000000000000036 /* OutlineParser.swift */,
 				E40000000000000000000037 /* NextUpChrome.swift */,
 				E40000000000000000000038 /* AppLanguage.swift */,
+				E40000000000000000000039 /* ShortcutMap.swift */,
+				E4000000000000000000003A /* WidgetFit.swift */,
+				E4000000000000000000003C /* TodoClearing.swift */,
 			);
 			path = NextUpShared;
 			sourceTree = "<group>";
@@ -229,6 +251,9 @@
 				E50000000000000000000034 /* TodoRepositoryTests.swift */,
 				E50000000000000000000035 /* OutlineParserTests.swift */,
 				E50000000000000000000036 /* AppLanguageTests.swift */,
+				E50000000000000000000037 /* ShortcutMapTests.swift */,
+				E50000000000000000000038 /* WidgetFitTests.swift */,
+				E50000000000000000000039 /* TodoClearingTests.swift */,
 			);
 			path = NextUpTests;
 			sourceTree = "<group>";
@@ -255,6 +280,7 @@
 				E20000000000000000000013 /* Frameworks */,
 				E20000000000000000000012 /* Resources */,
 				E20000000000000000000014 /* Embed Foundation Extensions */,
+				E20000000000000000000015 /* Set Bundle Name */,
 			);
 			buildRules = (
 			);
@@ -372,6 +398,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				E80000000000000000000002 /* Assets.xcassets in Resources */,
+				E8000000000000000000000A /* AppIcon.icon in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -380,6 +407,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				E81000000000000000000003 /* Assets.xcassets in Resources */,
+				E81000000000000000000006 /* AppIcon.icon in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -399,6 +427,24 @@
 		};
 /* End PBXResourcesBuildPhase section */
 
+/* Begin PBXShellScriptBuildPhase section */
+		E20000000000000000000015 /* Set Bundle Name */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Set Bundle Name";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "if [ -n \"$INFOPLIST_PATH\" ] && [ -f \"$TARGET_BUILD_DIR/$INFOPLIST_PATH\" ]; then\n  /usr/libexec/PlistBuddy -c 'Set :CFBundleName Next Up' \"$TARGET_BUILD_DIR/$INFOPLIST_PATH\"\nfi\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
 /* Begin PBXSourcesBuildPhase section */
 		E20000000000000000000011 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -409,6 +455,7 @@
 				E80000000000000000000006 /* ContentView.swift in Sources */,
 				E80000000000000000000008 /* QuickAddMenu.swift in Sources */,
 				E80000000000000000000009 /* SettingsView.swift in Sources */,
+				E8000000000000000000000B /* ShortcutAppKit.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -434,6 +481,9 @@
 				E82000000000000000000006 /* OutlineParser.swift in Sources */,
 				E82000000000000000000007 /* NextUpChrome.swift in Sources */,
 				E82000000000000000000008 /* AppLanguage.swift in Sources */,
+				E82000000000000000000009 /* ShortcutMap.swift in Sources */,
+				E8200000000000000000000A /* WidgetFit.swift in Sources */,
+				E8200000000000000000000B /* TodoClearing.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -447,6 +497,9 @@
 				E83000000000000000000005 /* TodoRepositoryTests.swift in Sources */,
 				E83000000000000000000006 /* OutlineParserTests.swift in Sources */,
 				E83000000000000000000007 /* AppLanguageTests.swift in Sources */,
+				E83000000000000000000008 /* ShortcutMapTests.swift in Sources */,
+				E83000000000000000000009 /* WidgetFitTests.swift in Sources */,
+				E8300000000000000000000A /* TodoClearingTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -520,6 +573,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = "$(NEXTUP_APP_ENTITLEMENTS)";
 				INFOPLIST_FILE = NextUpApp/Info.plist;
+				INFOPLIST_KEY_CFBundleName = "Next Up";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",
@@ -533,6 +587,7 @@
 			buildSettings = {
 				CODE_SIGN_ENTITLEMENTS = "$(NEXTUP_APP_ENTITLEMENTS)";
 				INFOPLIST_FILE = NextUpApp/Info.plist;
+				INFOPLIST_KEY_CFBundleName = "Next Up";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/../Frameworks",

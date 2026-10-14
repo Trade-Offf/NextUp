@@ -1,0 +1,33 @@
+{
+  "fill" : {
+    "solid" : "extended-srgb:0.98431,0.88235,0.74510,1.00000"
+  },
+  "groups" : [
+    {
+      "layers" : [
+        {
+          "glass" : false,
+          "image-name" : "foreground.png",
+          "name" : "Dog",
+          "position" : {
+            "scale" : 1.12,
+            "translation-in-points" : [0, 0]
+          }
+        }
+      ],
+      "name" : "Mark",
+      "shadow" : {
+        "kind" : "none",
+        "opacity" : 0
+      },
+      "specular" : false,
+      "translucency" : {
+        "enabled" : false,
+        "value" : 0
+      }
+    }
+  ],
+  "supported-platforms" : {
+    "squares" : ["macOS"]
+  }
+}

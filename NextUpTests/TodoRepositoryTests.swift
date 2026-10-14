@@ -29,6 +29,73 @@ final class TodoRepositoryTests: XCTestCase {
         XCTAssertTrue(try repository.load().items.isEmpty)
     }
 
+    func testBulkDeleteTakesChildrenAndRestorePutsThemBack() throws {
+        let parent = try repository.add(TodoDraft(title: "父任务"), calendar: calendar)
+        let child = try repository.add(TodoDraft(title: "子任务", parentID: parent.id), calendar: calendar)
+        let other = try repository.add(TodoDraft(title: "另一条"), calendar: calendar)
+        let keep = try repository.add(TodoDraft(title: "留着"), calendar: calendar)
+        let before = try repository.load().items
+
+        let removed = try repository.delete(ids: [parent.id, other.id])
+        XCTAssertEqual(Set(removed.map(\.id)), [parent.id, child.id, other.id])
+        XCTAssertEqual(try repository.load().items.map(\.id), [keep.id])
+
+        try repository.restore(removed)
+        let after = try repository.load().items
+        XCTAssertEqual(after.sorted { $0.id.uuidString < $1.id.uuidString }, before.sorted { $0.id.uuidString < $1.id.uuidString })
+        XCTAssertEqual(after.first { $0.id == child.id }?.parentID, parent.id)
+
+        try repository.restore(removed)
+        XCTAssertEqual(try repository.load().items.count, before.count)
+    }
+
+    func testRestoreKeepsAChangeMadeInBetween() throws {
+        let first = try repository.add(TodoDraft(title: "甲"), calendar: calendar)
+        let second = try repository.add(TodoDraft(title: "乙"), calendar: calendar)
+        let removed = try repository.delete(ids: [first.id])
+        _ = try repository.setStatus(id: second.id, status: .done, now: Date(timeIntervalSince1970: 1_762_000_000))
+
+        try repository.restore(removed)
+        XCTAssertEqual(try status(of: first.id), .todo)
+        XCTAssertEqual(try status(of: second.id), .done)
+    }
+
+    func testRestoreLiftsAnOrphanToTheTop() throws {
+        let parent = try repository.add(TodoDraft(title: "父任务"), calendar: calendar)
+        let child = try repository.add(TodoDraft(title: "子任务", parentID: parent.id), calendar: calendar)
+        let removedChild = try repository.delete(ids: [child.id])
+        try repository.delete(id: parent.id)
+
+        try repository.restore(removedChild)
+        XCTAssertNil(try repository.load().items.first { $0.id == child.id }?.parentID)
+    }
+
+    func testFiveHundredItemsDeleteAndRestoreStayWithinAFewSeconds() throws {
+        let outline = (1...500).map { "\($0). 任务 \($0)" }.joined(separator: "\n")
+        let now = Date(timeIntervalSince1970: 1_762_000_000)
+        let created = try repository.addOutline(outline, now: now, calendar: calendar)
+        XCTAssertEqual(created.count, 500)
+        let started = Date()
+        let removed = try repository.delete(ids: Set(created.map(\.id)))
+        XCTAssertEqual(removed.count, 500)
+        XCTAssertTrue(try repository.load().items.isEmpty)
+        try repository.restore(removed)
+        XCTAssertLessThan(Date().timeIntervalSince(started), 3)
+        let restored = try repository.load().items.sorted { $0.sortOrder < $1.sortOrder }
+        XCTAssertEqual(restored.map(\.title), created.sorted { $0.sortOrder < $1.sortOrder }.map(\.title))
+        XCTAssertEqual(restored.map(\.id), created.sorted { $0.sortOrder < $1.sortOrder }.map(\.id))
+    }
+
+    func testUndoingAPastedOutlineLeavesTheStoreAsItWas() throws {
+        let existing = try repository.add(TodoDraft(title: "原有"), calendar: calendar)
+        let outline = (1...300).map { "\($0). 粘错的第 \($0) 行" }.joined(separator: "\n")
+        let created = try repository.addOutline(outline, now: Date(timeIntervalSince1970: 1_762_000_000), calendar: calendar)
+        XCTAssertEqual(created.count, 300)
+
+        try repository.delete(ids: Set(created.map(\.id)))
+        XCTAssertEqual(try repository.load().items.map(\.id), [existing.id])
+    }
+
     func testParentCompletesOnlyWhenEveryChildIsDone() throws {
         let parent = try repository.add(TodoDraft(title: "父任务"), calendar: calendar)
         let first = try repository.add(TodoDraft(title: "甲", parentID: parent.id), calendar: calendar)

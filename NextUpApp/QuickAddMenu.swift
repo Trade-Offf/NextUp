@@ -7,23 +7,46 @@ struct QuickAddMenu: View {
     @Environment(\.openWindow) private var openWindow
     @State private var title = ""
     @State private var failure: StoreError?
+    @State private var pendingCount: Int?
+    @State private var adding = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 12) {
-                Button(action: add) {
-                    Image(systemName: "plus")
-                        .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(.tertiary)
-                        .frame(width: 22, height: 22)
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 12) {
+                    Button(action: add) {
+                        Image(systemName: "plus")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(.tertiary)
+                            .frame(width: 22, height: 22)
+                    }
+                    .buttonStyle(.plain)
+                    .help(Copy.text(.add, store.language))
+                    TextField(Copy.text(.menuPlaceholder, store.language), text: $title)
+                        .textFieldStyle(.plain)
+                        .font(.system(size: NextUpChrome.taskSize))
+                        .onSubmit(add)
+                        .onExitCommand {
+                            title = ""
+                            failure = nil
+                            pendingCount = nil
+                            store.setFieldOwnsUndo("quick-add", active: false)
+                        }
+                        .onChange(of: title) { _, newValue in
+                            let count = OutlineParser.entryCount(newValue)
+                            pendingCount = count > OutlineParser.pasteConfirmLimit ? count : nil
+                            store.setFieldOwnsUndo("quick-add", active: !newValue.isEmpty)
+                        }
                 }
-                .buttonStyle(.plain)
-                .keyboardShortcut(.defaultAction)
-                .help(Copy.text(.add, store.language))
-                TextField(Copy.text(.menuPlaceholder, store.language), text: $title)
-                    .textFieldStyle(.plain)
-                    .font(.system(size: NextUpChrome.taskSize))
-                    .onSubmit(add)
+                if let pendingCount {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(Copy.pendingPaste(pendingCount, store.language))
+                            .font(.subheadline.weight(.medium))
+                        Text(Copy.text(.pasteHint, store.language))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 8)
@@ -78,6 +101,7 @@ struct QuickAddMenu: View {
                 .strokeBorder(Color.primary.opacity(NextUpChrome.hairlineOpacity), lineWidth: NextUpChrome.hairline)
         }
         .onAppear { store.reload() }
+        .onDisappear { store.setFieldOwnsUndo("quick-add", active: false) }
     }
 
     private var upcoming: [TodoItem] {
@@ -105,14 +129,21 @@ struct QuickAddMenu: View {
     }
 
     private func add() {
+        guard !adding else { return }
+        let submitted = title
+        guard !submitted.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        adding = true
+        defer { adding = false }
         do {
-            if OutlineParser.looksLikeOutline(title) {
-                try store.addOutline(title)
+            if OutlineParser.looksLikeOutline(submitted) {
+                try store.addOutline(submitted)
             } else {
-                try store.add(title: title)
+                try store.add(title: submitted)
             }
             title = ""
+            pendingCount = nil
             failure = nil
+            store.setFieldOwnsUndo("quick-add", active: false)
         } catch let error as StoreError {
             failure = error
         } catch {
