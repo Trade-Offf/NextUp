@@ -1,6 +1,38 @@
 import Foundation
 
+public struct WidgetStats: Equatable, Sendable {
+    public var unfinished: Int
+    public var overdue: Int
+    public var today: Int
+    public var upcoming: Int
+    public var undated: Int
+
+    public static let zero = WidgetStats(unfinished: 0, overdue: 0, today: 0, upcoming: 0, undated: 0)
+
+    public init(unfinished: Int, overdue: Int, today: Int, upcoming: Int, undated: Int) {
+        self.unfinished = unfinished
+        self.overdue = overdue
+        self.today = today
+        self.upcoming = upcoming
+        self.undated = undated
+    }
+}
+
 public enum TodoSorting {
+    public static func widgetStats(_ items: [TodoItem], now: Date, calendar: Calendar) -> WidgetStats {
+        var stats = WidgetStats.zero
+        for item in items where item.status != .done {
+            stats.unfinished += 1
+            switch DueDate.bucket(item.dueDate, now: now, calendar: calendar) {
+            case .overdue: stats.overdue += 1
+            case .today: stats.today += 1
+            case .upcoming: stats.upcoming += 1
+            case .undated: stats.undated += 1
+            }
+        }
+        return stats
+    }
+
     public static func incompleteCount(_ items: [TodoItem]) -> Int {
         items.reduce(into: 0) { count, item in
             if item.status != .done { count += 1 }

@@ -13,7 +13,6 @@ public enum StoreError: Error, Equatable, Sendable {
     case restoreNotNeeded
 
     public var message: String {
-        // 有 Apple ID 和 App Group 后再改回共享数据那句报错。
         Copy.storeError(self, AppLanguage.resolved)
     }
 }
@@ -220,6 +219,35 @@ public struct TodoRepository: Sendable {
             }
             let remove = subtreeIDs(of: id, in: document.items)
             document.items.removeAll { remove.contains($0.id) }
+        }
+    }
+
+    @discardableResult
+    public func delete(ids: Set<UUID>) throws -> [TodoItem] {
+        try mutate { document in
+            var remove: Set<UUID> = []
+            for id in ids where document.items.contains(where: { $0.id == id }) {
+                remove.formUnion(subtreeIDs(of: id, in: document.items))
+            }
+            let removed = document.items.filter { remove.contains($0.id) }
+            document.items.removeAll { remove.contains($0.id) }
+            return removed
+        }
+    }
+
+    /// 放回时保留原来的 id、父级和排序。已经存在的跳过；父级已不在的放回顶层。
+    public func restore(_ items: [TodoItem]) throws {
+        guard !items.isEmpty else { return }
+        try mutate { document in
+            let existing = Set(document.items.map(\.id))
+            let incoming = items.filter { !existing.contains($0.id) }
+            let available = existing.union(incoming.map(\.id))
+            for var item in incoming {
+                if let parentID = item.parentID, !available.contains(parentID) {
+                    item.parentID = nil
+                }
+                document.items.append(item)
+            }
         }
     }
 

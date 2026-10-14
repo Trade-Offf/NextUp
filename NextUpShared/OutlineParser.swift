@@ -19,6 +19,14 @@ public enum OutlineParser {
         classifiedLines(raw).count >= 2
     }
 
+    /// 超过这个条数先停住，等回车再写入。
+    public static let pasteConfirmLimit = 20
+
+    /// 会写成几条任务。嵌套行也各算一条。
+    public static func entryCount(_ raw: String) -> Int {
+        classifiedLines(raw).count
+    }
+
     public static func parse(_ raw: String, now: Date, calendar: Calendar) -> [OutlineEntry] {
         let lines = classifiedLines(raw)
         guard !lines.isEmpty else { return [] }

@@ -1,19 +1,21 @@
+import AppKit
 import SwiftUI
 import NextUpShared
 
 struct ContentView: View {
     @EnvironmentObject private var store: TaskStore
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.undoManager) private var undoManager
     @State private var draft = ""
     @State private var draftError: StoreError?
-    @State private var completedExpanded = false
-    @State private var selectedID: UUID?
+    @State private var pendingPasteCount: Int?
     @State private var listMotionReady = false
     @FocusState private var composerFocused: Bool
     @Environment(\.openSettings) private var openSettings
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
+        let _ = prepareComposerReturn()
         NavigationStack {
             Group {
                 if let loadError = store.loadError {
@@ -42,13 +44,33 @@ struct ContentView: View {
         }
         .toolbarBackground(Color.clear, for: .windowToolbar)
         .toolbarBackgroundVisibility(.visible, for: .windowToolbar)
+        .background(KeyWindowProbe { window, isKey in
+            store.setWindow(window, isKey: isKey)
+        })
         .onAppear {
+            store.undoManager = undoManager
+            store.observeUndoStack()
             store.reload()
             composerFocused = store.document.items.isEmpty
             DispatchQueue.main.async { listMotionReady = true }
         }
         .onChange(of: scenePhase) { _, phase in
-            if phase == .active { store.reload() }
+            if phase == .active {
+                store.undoManager = undoManager
+                store.observeUndoStack()
+                store.reload()
+            }
+        }
+        .onChange(of: store.focusComposerToken) { _, _ in
+            composerFocused = true
+        }
+        .onChange(of: composerFocused) { _, focused in
+            store.setTyping("composer", active: focused)
+            store.setFieldOwnsUndo("composer", active: focused && !draft.isEmpty)
+        }
+        .onDisappear {
+            store.setTyping("composer", active: false)
+            store.setFieldOwnsUndo("composer", active: false)
         }
         .onOpenURL { store.open(url: $0) }
         .alert(Copy.text(.notice, store.language), isPresented: noticeIsPresented) {
@@ -72,40 +94,66 @@ struct ContentView: View {
         }
     }
 
+    private var listAnimation: Animation? {
+        guard listMotionReady, store.animatesListChanges else { return nil }
+        return NextUpChrome.resolved(NextUpChrome.settle, reduceMotion: reduceMotion)
+    }
+
     private var taskList: some View {
         let topLevel = store.document.items.filter { $0.parentID == nil }
         let open = manualOrder(topLevel.filter { $0.status != .done || store.settlingIDs.contains($0.id) })
         let done = manualOrder(topLevel.filter { $0.status == .done && !store.settlingIDs.contains($0.id) })
-        return ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                composer
-                SiblingColumn(items: open, selectedID: $selectedID, depth: 0, dividers: true)
-                if !done.isEmpty {
-                    DisclosureGroup(isExpanded: $completedExpanded) {
-                        SiblingColumn(items: done, selectedID: $selectedID, depth: 0, dividers: true, fadesRemoval: true)
-                    } label: {
-                        Text(Copy.text(.completed, store.language))
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.vertical, 4)
-                            .contentShape(Rectangle())
-                            .onTapGesture { completedExpanded.toggle() }
-                            .pointerStyle(.link)
+        return ScrollViewReader { proxy in
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    composer
+                    SiblingColumn(items: open, depth: 0, dividers: true)
+                    if !done.isEmpty {
+                        DisclosureGroup(isExpanded: showsCompleted) {
+                            SiblingColumn(items: done, depth: 0, dividers: true, fadesRemoval: true)
+                        } label: {
+                            Text(Copy.text(.completed, store.language))
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .padding(.vertical, 4)
+                                .contentShape(Rectangle())
+                                .onTapGesture { store.showsCompleted.toggle() }
+                                .pointerStyle(.link)
+                        }
+                        .contextMenu {
+                            Button(Copy.text(.clearCompleted, store.language)) {
+                                store.clearCompleted()
+                            }
+                            .disabled(!store.hasCompleted)
+                        }
+                        .padding(.top, 22)
                     }
-                    .padding(.top, 22)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 28)
+                .padding(.top, 4)
+                .padding(.bottom, 32)
+                .frame(maxWidth: 640, alignment: .leading)
+                .frame(maxWidth: .infinity, alignment: .topLeading)
+                .animation(listAnimation, value: open.map(\.id))
+                .animation(listAnimation, value: done.map(\.id))
+                .animation(listAnimation, value: store.document.items.map(\.id))
+            }
+            .scrollIndicators(.automatic)
+            .onChange(of: store.selectionScrollID) { _, id in
+                guard let id else { return }
+                if reduceMotion {
+                    proxy.scrollTo(id, anchor: .center)
+                } else {
+                    withAnimation(NextUpChrome.settle) { proxy.scrollTo(id, anchor: .center) }
                 }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 28)
-            .padding(.top, 4)
-            .padding(.bottom, 32)
-            .frame(maxWidth: 640, alignment: .leading)
-            .frame(maxWidth: .infinity, alignment: .topLeading)
-            .animation(listMotionReady ? NextUpChrome.resolved(NextUpChrome.settle, reduceMotion: reduceMotion) : nil, value: open.map(\.id))
-            .animation(listMotionReady ? NextUpChrome.resolved(NextUpChrome.settle, reduceMotion: reduceMotion) : nil, value: done.map(\.id))
         }
-        .scrollIndicators(.automatic)
+    }
+
+    private var showsCompleted: Binding<Bool> {
+        Binding(get: { store.showsCompleted }, set: { store.showsCompleted = $0 })
     }
 
     private var composer: some View {
@@ -121,21 +169,31 @@ struct ContentView: View {
                     .lineLimit(1...6)
                     .focused($composerFocused)
                     .onSubmit(commitDraft)
+                    .onExitCommand(perform: clearDraft)
                     .onChange(of: draft) { _, newValue in
+                        store.setFieldOwnsUndo("composer", active: composerFocused && !newValue.isEmpty)
+                        guard !store.isApplyingUndo else { return }
+                        let count = OutlineParser.entryCount(newValue)
+                        if count > OutlineParser.pasteConfirmLimit {
+                            pendingPasteCount = count
+                            return
+                        }
+                        pendingPasteCount = nil
                         guard OutlineParser.looksLikeOutline(newValue) else { return }
                         commitOutline(newValue)
                     }
             }
             .padding(.vertical, 12)
-            .background {
-                Button(Copy.text(.add, store.language)) {
-                    composerFocused = true
+            if let pendingPasteCount {
+                HStack(spacing: 8) {
+                    Text(Copy.pendingPaste(pendingPasteCount, store.language))
+                        .font(.subheadline.weight(.medium))
+                    Text(Copy.text(.pasteHint, store.language))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
-                .keyboardShortcut("n", modifiers: .command)
-                .labelsHidden()
-                .opacity(0)
-                .allowsHitTesting(false)
-                .accessibilityHidden(true)
+                .padding(.bottom, 8)
+                .transition(pendingTransition)
             }
             if let draftError {
                 Text(draftError.message)
@@ -144,6 +202,29 @@ struct ContentView: View {
                     .padding(.bottom, 8)
             }
         }
+        .animation(NextUpChrome.resolved(NextUpChrome.settle, reduceMotion: reduceMotion), value: pendingPasteCount != nil)
+    }
+
+    private var pendingTransition: AnyTransition {
+        if reduceMotion { return .opacity }
+        return .asymmetric(
+            insertion: .opacity.combined(with: .offset(y: -4)),
+            removal: .opacity
+        )
+    }
+
+    private func clearDraft() {
+        let hasDraft = !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || pendingPasteCount != nil
+        draft = ""
+        draftError = nil
+        pendingPasteCount = nil
+        guard !hasDraft else { return }
+        composerFocused = false
+        store.clearSelection()
+    }
+
+    private func prepareComposerReturn() {
+        store.composerReturn = composerFocused ? { commitDraft() } : nil
     }
 
     private func commitDraft() {
@@ -159,17 +240,22 @@ struct ContentView: View {
     }
 
     private func commitOutline(_ text: String) {
+        let pending = pendingPasteCount
+        pendingPasteCount = nil
         commit {
             try store.addOutline(text)
         }
+        if draftError != nil { pendingPasteCount = pending }
     }
 
     private func commit(_ body: () throws -> Void) {
         do {
             try body()
-            draft = ""
-            draftError = nil
-            composerFocused = true
+            store.performWithoutUndo {
+                draft = ""
+                draftError = nil
+                composerFocused = true
+            }
         } catch let error as StoreError {
             draftError = error
         } catch {
@@ -203,7 +289,6 @@ private struct SiblingColumn: View {
     @EnvironmentObject private var store: TaskStore
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let items: [TodoItem]
-    @Binding var selectedID: UUID?
     var depth: Int
     var dividers: Bool
     var fadesRemoval = false
@@ -230,7 +315,6 @@ private struct SiblingColumn: View {
                 }
                 TaskGroup(
                     item: item,
-                    selectedID: $selectedID,
                     depth: depth,
                     onDrag: { translation in
                         updateDrag(id: item.id, index: index, translation: translation)
@@ -261,10 +345,13 @@ private struct SiblingColumn: View {
                 value: shift(for: item.id, index: index)
             )
             .zIndex(isLifted(item.id) ? 1 : 0)
+            .id(item.id)
             .transition(
                 .asymmetric(
                     insertion: .opacity,
-                    removal: fadesRemoval ? .opacity : .move(edge: .leading).combined(with: .opacity)
+                    removal: fadesRemoval || store.fadesRowRemoval || reduceMotion
+                        ? .opacity
+                        : .move(edge: .leading).combined(with: .opacity)
                 )
             )
         }
@@ -379,7 +466,6 @@ private struct CellHeightKey: PreferenceKey {
 private struct TaskGroup: View {
     @EnvironmentObject private var store: TaskStore
     let item: TodoItem
-    @Binding var selectedID: UUID?
     var depth: Int = 0
     var onDrag: (CGFloat) -> Void = { _ in }
     var onDragEnd: () -> Void = {}
@@ -402,40 +488,49 @@ private struct TaskGroup: View {
             ElasticTaskRow(
                 item: item,
                 depth: depth,
-                isSelected: selectedID == item.id,
-                canSelect: depth < 2,
-                onSelect: {
-                    guard depth < 2 else { return }
-                    if selectedID == item.id {
-                        selectedID = nil
-                        composingChild = false
-                        childTitle = ""
-                    } else {
-                        selectedID = item.id
-                    }
-                },
+                isSelected: store.selection.contains(item.id),
+                canSelect: true,
+                onSelect: { select(item.id) },
                 onDrag: onDrag,
                 onDragEnd: onDragEnd
             )
-            SiblingColumn(items: children, selectedID: $selectedID, depth: depth + 1, dividers: false)
+            SiblingColumn(items: children, depth: depth + 1, dividers: false)
             Group {
-                if depth < 2, selectedID == item.id {
+                if depth < 2, store.selection == [item.id] {
                     addComposer
                         .transition(addTransition)
                 }
             }
-            .animation(addPresenceAnimation, value: selectedID == item.id)
+            .animation(addPresenceAnimation, value: store.selection == [item.id])
         }
-        .onChange(of: selectedID) { _, newValue in
-            guard newValue != item.id else { return }
+        .onChange(of: store.selection) { _, newValue in
+            guard newValue != [item.id] else { return }
             composingChild = false
             childTitle = ""
+            store.setTyping("child-\(item.id)", active: false)
+            store.setFieldOwnsUndo("child-\(item.id)", active: false)
+        }
+        .onDisappear {
+            store.setFieldOwnsUndo("child-\(item.id)", active: false)
         }
     }
 
+    private func select(_ id: UUID) {
+        let flags = NSApp.currentEvent?.modifierFlags ?? []
+        if flags.contains(.command) {
+            store.toggleSelection(id)
+        } else if flags.contains(.shift) {
+            store.selectRange(to: id)
+        } else {
+            store.selectOnly(id)
+        }
+    }
+
+    private var showsAdd: Bool { store.selection == [item.id] }
+
     private var addPresenceAnimation: Animation? {
         guard !reduceMotion else { return nil }
-        return selectedID == item.id ? NextUpChrome.settle.delay(0.05) : .easeOut(duration: 0.14)
+        return showsAdd ? NextUpChrome.settle.delay(0.05) : .easeOut(duration: 0.14)
     }
 
     private var addTransition: AnyTransition {
@@ -461,6 +556,13 @@ private struct TaskGroup: View {
                         .focused($childFocused)
                         .onSubmit(commitChild)
                         .onExitCommand(perform: cancelComposingChild)
+                        .onChange(of: childFocused) { _, focused in
+                            store.setTyping("child-\(item.id)", active: focused)
+                            store.setFieldOwnsUndo("child-\(item.id)", active: focused && !childTitle.isEmpty)
+                        }
+                        .onChange(of: childTitle) { _, value in
+                            store.setFieldOwnsUndo("child-\(item.id)", active: childFocused && !value.isEmpty)
+                        }
                 } else {
                     Text(Copy.text(.add, store.language))
                         .foregroundStyle(.secondary)
@@ -487,6 +589,8 @@ private struct TaskGroup: View {
     private func cancelComposingChild() {
         childTitle = ""
         composingChild = false
+        store.setTyping("child-\(item.id)", active: false)
+        store.setFieldOwnsUndo("child-\(item.id)", active: false)
     }
 
     private func commitChild() {
@@ -497,9 +601,12 @@ private struct TaskGroup: View {
         }
         do {
             try store.add(title: title, parentID: item.id)
-            childTitle = ""
+            store.performWithoutUndo { childTitle = "" }
             childFocused = true
+        } catch let error as StoreError {
+            store.notice = error.message
         } catch {
+            store.notice = StoreError.writeFailed.message
         }
     }
 }
@@ -552,9 +659,13 @@ private struct ElasticTaskRow: View {
         .simultaneousGesture(editing ? nil : pointer)
         .contextMenu {
             Button(Copy.text(.edit, store.language)) { beginEditing() }
-            Button(Copy.text(.delete, store.language), role: .destructive) {
-                NextUpChrome.perform(NextUpChrome.settle, reduceMotion: reduceMotion) {
-                    store.delete(id: item.id)
+            Button(deleteLabel, role: .destructive) {
+                let ids = deletionIDs
+                let run = { store.delete(ids: ids) }
+                if ids.count > 50 || reduceMotion {
+                    run()
+                } else {
+                    NextUpChrome.perform(NextUpChrome.settle, reduceMotion: reduceMotion, run)
                 }
             }
         }
@@ -562,7 +673,19 @@ private struct ElasticTaskRow: View {
         .onChange(of: editing) { _, isEditing in
             if isEditing {
                 DispatchQueue.main.async { editFocused = true }
+            } else {
+                store.setTyping("edit-\(item.id)", active: false)
+                store.setFieldOwnsUndo("edit-\(item.id)", active: false)
             }
+        }
+        .onChange(of: store.renameRequest) { _, id in
+            guard id == item.id else { return }
+            beginEditing()
+            store.consumeRenameRequest()
+        }
+        .onDisappear {
+            store.setTyping("edit-\(item.id)", active: false)
+            store.setFieldOwnsUndo("edit-\(item.id)", active: false)
         }
         .onChange(of: item.status) { old, new in
             guard hasChildren, old != .done, new == .done else { return }
@@ -585,6 +708,13 @@ private struct ElasticTaskRow: View {
                     .focused($editFocused)
                     .onSubmit(commitEdit)
                     .onExitCommand { editing = false }
+                    .onChange(of: editFocused) { _, focused in
+                        store.setTyping("edit-\(item.id)", active: focused)
+                        store.setFieldOwnsUndo("edit-\(item.id)", active: focused && editTitle != item.title)
+                    }
+                    .onChange(of: editTitle) { _, value in
+                        store.setFieldOwnsUndo("edit-\(item.id)", active: editFocused && value != item.title)
+                    }
             } else {
                 Text(NextUpChrome.plainTitle(item.title))
                     .font(.system(size: NextUpChrome.taskSize, weight: hasChildren && item.status != .done ? .semibold : .regular))
@@ -649,6 +779,15 @@ private struct ElasticTaskRow: View {
         store.setStatus(id: item.id, status: item.status == .done ? .todo : .done)
     }
 
+    private var deletionIDs: Set<UUID> {
+        store.selection.contains(item.id) && store.selection.count > 1 ? store.selection : [item.id]
+    }
+
+    private var deleteLabel: String {
+        let count = deletionIDs.count
+        return count > 1 ? Copy.undoDelete(count, store.language) : Copy.text(.delete, store.language)
+    }
+
     private func beginEditing() {
         editTitle = item.title
         editing = true
@@ -656,7 +795,7 @@ private struct ElasticTaskRow: View {
 
     private func commitEdit() {
         if store.rename(id: item.id, title: editTitle) {
-            editing = false
+            store.performWithoutUndo { editing = false }
         }
     }
 
@@ -780,5 +919,40 @@ struct NextUpAluminumFill: View {
 private extension Color {
     init(stop: NextUpChrome.Stop) {
         self.init(red: stop.red, green: stop.green, blue: stop.blue)
+    }
+}
+
+private struct KeyWindowProbe: NSViewRepresentable {
+    var onChange: (NSWindow?, Bool) -> Void
+
+    func makeNSView(context: Context) -> ProbeView {
+        let view = ProbeView()
+        view.onChange = onChange
+        return view
+    }
+
+    func updateNSView(_ view: ProbeView, context: Context) {
+        view.onChange = onChange
+    }
+
+    final class ProbeView: NSView {
+        var onChange: ((NSWindow?, Bool) -> Void)?
+
+        deinit {
+            NotificationCenter.default.removeObserver(self)
+        }
+
+        override func viewDidMoveToWindow() {
+            super.viewDidMoveToWindow()
+            NotificationCenter.default.removeObserver(self)
+            guard window != nil else { return }
+            NotificationCenter.default.addObserver(self, selector: #selector(report), name: NSWindow.didBecomeKeyNotification, object: nil)
+            NotificationCenter.default.addObserver(self, selector: #selector(report), name: NSWindow.didResignKeyNotification, object: nil)
+            report()
+        }
+
+        @objc private func report() {
+            onChange?(window, window?.isKeyWindow ?? false)
+        }
     }
 }

@@ -9,6 +9,9 @@ public enum AppIdentity {
     public static let placeholderAppGroupID = "group.com.example.nextup"
     public static let placeholderURLScheme = "nextup"
     public static let placeholderWidgetKind = "NextUpWidget"
+    public static let countWidgetKind = "NextUpCount"
+    public static let listWidgetKind = "NextUpList"
+    public static let widgetKinds = [placeholderWidgetKind, countWidgetKind, listWidgetKind]
 
     public static let appGroupInfoKey = "NextUpAppGroupID"
     public static let urlSchemeInfoKey = "NextUpURLScheme"

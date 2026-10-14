@@ -1,3 +1,4 @@
+import AppKit
 import WidgetKit
 import SwiftUI
 import NextUpShared
@@ -37,16 +38,17 @@ struct WidgetRow: Identifiable {
 struct WidgetEntry: TimelineEntry {
     let date: Date
     let unfinishedCount: Int
+    let stats: WidgetStats
     let rows: [WidgetRow]
     let largeRows: [WidgetRow]
     let isReadFailure: Bool
 
     static func empty(date: Date) -> WidgetEntry {
-        WidgetEntry(date: date, unfinishedCount: 0, rows: [], largeRows: [], isReadFailure: false)
+        WidgetEntry(date: date, unfinishedCount: 0, stats: .zero, rows: [], largeRows: [], isReadFailure: false)
     }
 
     static func readFailure(date: Date) -> WidgetEntry {
-        WidgetEntry(date: date, unfinishedCount: 0, rows: [], largeRows: [], isReadFailure: true)
+        WidgetEntry(date: date, unfinishedCount: 0, stats: .zero, rows: [], largeRows: [], isReadFailure: true)
     }
 
     static var preview: WidgetEntry {
@@ -54,6 +56,7 @@ struct WidgetEntry: TimelineEntry {
         return WidgetEntry(
             date: .now,
             unfinishedCount: 5,
+            stats: WidgetStats(unfinished: 5, overdue: 1, today: 2, upcoming: 1, undated: 1),
             rows: [
                 WidgetRow(id: "preview-1", title: "与 Allen 对齐 BD 排期", trailing: "10/14", isOverdue: false),
                 WidgetRow(id: "preview-2", title: "确认 CashBack 发版事项", trailing: "10/15", isOverdue: false),
@@ -75,6 +78,7 @@ struct WidgetEntry: TimelineEntry {
         return WidgetEntry(
             date: .now,
             unfinishedCount: 1,
+            stats: WidgetStats(unfinished: 1, overdue: 1, today: 0, upcoming: 0, undated: 0),
             rows: [
                 WidgetRow(
                     id: "preview-long",
@@ -118,28 +122,17 @@ struct NextUpProvider: TimelineProvider {
             let repository = try TodoRepository.localStore()
             let items = try repository.load().items
             let calendar = Calendar.current
-            let rows = widgetRows(items, limit: 3, now: now, calendar: calendar)
+            let stats = TodoSorting.widgetStats(items, now: now, calendar: calendar)
             return WidgetEntry(
                 date: now,
-                unfinishedCount: TodoSorting.incompleteCount(items),
-                rows: rows,
+                unfinishedCount: stats.unfinished,
+                stats: stats,
+                rows: [],
                 largeRows: largeWidgetRows(items, now: now, calendar: calendar),
                 isReadFailure: false
             )
         } catch {
             return .readFailure(date: now)
-        }
-    }
-
-    private func widgetRows(_ items: [TodoItem], limit: Int, now: Date, calendar: Calendar) -> [WidgetRow] {
-        TodoSorting.widgetItems(items, limit: limit, now: now, calendar: calendar).map { item in
-            WidgetRow(
-                item: item,
-                now: now,
-                calendar: calendar,
-                depth: 0,
-                canComplete: !items.contains { $0.parentID == item.id }
-            )
         }
     }
 
@@ -184,31 +177,177 @@ struct NextUpWidgetView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            header
-                .padding(.bottom, NextUpChrome.widgetHeaderGap)
-            if entry.isReadFailure {
-                failure
-            } else if visibleRows.isEmpty {
-                empty
+        Group {
+            if family == .systemLarge {
+                largeBody
             } else {
-                ForEach(Array(visibleRows.enumerated()), id: \.element.id) { index, row in
-                    taskRow(row, isNewGroup: index > 0 && row.depth == 0)
-                }
-                Spacer(minLength: 0)
+                mediumBody
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 
-    private var header: some View {
+    private var mediumBody: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            header(showsCount: false)
+            if entry.isReadFailure {
+                failure
+            } else if entry.stats.unfinished == 0 {
+                empty
+            } else {
+                statistics
+            }
+        }
+    }
+
+    private var largeBody: some View {
+        Group {
+            if entry.isReadFailure {
+                VStack(alignment: .leading, spacing: 0) {
+                    header(showsCount: false)
+                    failure
+                }
+            } else if visibleRows.isEmpty {
+                VStack(alignment: .leading, spacing: 0) {
+                    header(showsCount: true)
+                    empty
+                }
+            } else {
+                GeometryReader { proxy in
+                    let shown = rowsThatFit(in: proxy.size.height)
+                    VStack(alignment: .leading, spacing: 0) {
+                        header(showsCount: true)
+                        ForEach(Array(shown.rows.enumerated()), id: \.element.id) { index, row in
+                            taskRow(row, isNewGroup: index > 0 && row.depth == 0)
+                        }
+                        if shown.more > 0 {
+                            moreLink(shown.more)
+                        }
+                        Spacer(minLength: 0)
+                    }
+                    .frame(width: proxy.size.width, height: proxy.size.height, alignment: .topLeading)
+                }
+            }
+        }
+    }
+
+    private var statistics: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Spacer(minLength: 4)
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text("\(entry.stats.unfinished)")
+                    .font(.system(size: 36, weight: .semibold).monospacedDigit())
+                    .foregroundStyle(.primary)
+                    .widgetAccentable()
+                Text(Copy.text(.widgetOpenItems, language))
+                    .font(.system(size: NextUpChrome.dateSize))
+                    .foregroundStyle(.secondary)
+            }
+            Spacer(minLength: 8)
+            HStack(alignment: .top, spacing: 0) {
+                statCell(Copy.text(.overdue, language), entry.stats.overdue, emphasized: entry.stats.overdue > 0)
+                statCell(Copy.text(.today, language), entry.stats.today, emphasized: false)
+                statCell(Copy.text(.widgetUpcoming, language), entry.stats.upcoming, emphasized: false)
+                statCell(Copy.text(.widgetUndated, language), entry.stats.undated, emphasized: false)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+        .widgetURL(openURL)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(statisticsLabel)
+    }
+
+    private func statCell(_ title: String, _ value: Int, emphasized: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title)
+                .font(.system(size: 11))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+            Text("\(value)")
+                .font(.system(size: NextUpChrome.taskSize, weight: .medium).monospacedDigit())
+                .foregroundStyle(emphasized ? Color.orange : Color.primary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var statisticsLabel: String {
+        let stats = entry.stats
+        let parts = [
+            Copy.unfinishedLabel(stats.unfinished, language),
+            "\(Copy.text(.overdue, language)) \(stats.overdue)",
+            "\(Copy.text(.today, language)) \(stats.today)",
+            "\(Copy.text(.widgetUpcoming, language)) \(stats.upcoming)",
+            "\(Copy.text(.widgetUndated, language)) \(stats.undated)"
+        ]
+        return parts.joined(separator: "，")
+    }
+
+    private func rowsThatFit(in height: CGFloat) -> (rows: [WidgetRow], more: Int) {
+        let starts = visibleRows.enumerated().map { index, row in index > 0 && row.depth == 0 }
+        let choice = WidgetFit.choose(
+            rowCount: visibleRows.count,
+            total: entry.unfinishedCount,
+            groupStarts: starts,
+            height: max(0, height - 4),
+            metrics: Self.rowMetrics
+        )
+        return (Array(visibleRows.prefix(choice.shown)), choice.more)
+    }
+
+    private static var rowMetrics: WidgetFit.Metrics {
+        let task = lineHeight(NextUpChrome.taskSize)
+        let date = lineHeight(NextUpChrome.dateSize)
+        let body = max(16, task)
+        return WidgetFit.Metrics(
+            header: task + NextUpChrome.widgetHeaderGap,
+            row: NextUpChrome.widgetRowGap + body + 2,
+            groupExtra: NextUpChrome.widgetDividerTop
+                + NextUpChrome.hairline
+                + NextUpChrome.widgetDividerBottom
+                + NextUpChrome.widgetGroupRowGap
+                - NextUpChrome.widgetRowGap,
+            footer: NextUpChrome.widgetHeaderGap + date + 2
+        )
+    }
+
+    private static func lineHeight(_ size: CGFloat) -> CGFloat {
+        let font = NSFont.systemFont(ofSize: size)
+        return ceil(font.ascender - font.descender + font.leading)
+    }
+
+    private func moreLink(_ count: Int) -> some View {
+        Group {
+            if let openURL {
+                Link(destination: openURL) {
+                    moreLabel(count)
+                }
+                .buttonStyle(.plain)
+            } else {
+                moreLabel(count)
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Copy.widgetMore(count, language))
+        .accessibilityAddTraits(.isLink)
+    }
+
+    private func moreLabel(_ count: Int) -> some View {
+        Text(Copy.widgetMore(count, language))
+            .font(.system(size: NextUpChrome.dateSize))
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.top, NextUpChrome.widgetHeaderGap)
+    }
+
+    private func header(showsCount: Bool) -> some View {
         HStack(alignment: .firstTextBaseline) {
             Text(Copy.text(.windowTitle, language))
                 .font(.system(size: NextUpChrome.taskSize, weight: .semibold))
                 .foregroundStyle(.primary)
                 .widgetAccentable()
             Spacer(minLength: 12)
-            if !entry.isReadFailure {
+            if showsCount, !entry.isReadFailure {
                 Text(Copy.openCount(entry.unfinishedCount, language))
                     .font(.system(size: NextUpChrome.dateSize).monospacedDigit())
                     .foregroundStyle(.secondary)
@@ -216,8 +355,9 @@ struct NextUpWidgetView: View {
                     .layoutPriority(1)
             }
         }
+        .padding(.bottom, NextUpChrome.widgetHeaderGap)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(entry.isReadFailure ? Copy.text(.windowTitle, language) : Copy.unfinishedLabel(entry.unfinishedCount, language))
+        .accessibilityLabel(entry.isReadFailure || !showsCount ? Copy.text(.windowTitle, language) : Copy.unfinishedLabel(entry.unfinishedCount, language))
     }
 
     private var empty: some View {
@@ -360,24 +500,58 @@ private extension Color {
     }
 }
 
+private struct WidgetChrome: View {
+    let entry: WidgetEntry
+
+    var body: some View {
+        NextUpWidgetView(entry: entry)
+            .containerBackground(for: .widget) {
+                MetalCardBackground()
+            }
+    }
+}
+
 struct NextUpWidget: Widget {
-    let kind: String = AppIdentity.widgetKind()
+    let kind: String = AppIdentity.placeholderWidgetKind
 
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: NextUpProvider()) { entry in
-            NextUpWidgetView(entry: entry)
-                .containerBackground(for: .widget) {
-                    MetalCardBackground()
-                }
+            WidgetChrome(entry: entry)
         }
         .configurationDisplayName(Copy.text(.windowTitle, AppLanguage.resolved))
-        .description(Copy.text(.widgetDescription, AppLanguage.resolved))
+        .description(Copy.text(.widgetPlacedDescription, AppLanguage.resolved))
         .supportedFamilies([.systemMedium, .systemLarge])
     }
 }
 
+struct NextUpCountWidget: Widget {
+    let kind: String = AppIdentity.countWidgetKind
+
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: kind, provider: NextUpProvider()) { entry in
+            WidgetChrome(entry: entry)
+        }
+        .configurationDisplayName(Copy.text(.widgetCountName, AppLanguage.resolved))
+        .description(Copy.text(.widgetCountDescription, AppLanguage.resolved))
+        .supportedFamilies([.systemMedium])
+    }
+}
+
+struct NextUpListWidget: Widget {
+    let kind: String = AppIdentity.listWidgetKind
+
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: kind, provider: NextUpProvider()) { entry in
+            WidgetChrome(entry: entry)
+        }
+        .configurationDisplayName(Copy.text(.widgetListName, AppLanguage.resolved))
+        .description(Copy.text(.widgetListDescription, AppLanguage.resolved))
+        .supportedFamilies([.systemLarge])
+    }
+}
+
 #Preview(as: .systemMedium) {
-    NextUpWidget()
+    NextUpCountWidget()
 } timeline: {
     WidgetEntry.preview
     WidgetEntry.longTitle
@@ -386,7 +560,7 @@ struct NextUpWidget: Widget {
 }
 
 #Preview(as: .systemLarge) {
-    NextUpWidget()
+    NextUpListWidget()
 } timeline: {
     WidgetEntry.preview
     WidgetEntry.longTitle

@@ -29,7 +29,9 @@ struct CompleteTodoIntent: AppIntent {
         } catch {
             return .result()
         }
-        WidgetCenter.shared.reloadTimelines(ofKind: AppIdentity.widgetKind())
+        for kind in AppIdentity.widgetKinds {
+            WidgetCenter.shared.reloadTimelines(ofKind: kind)
+        }
         return .result()
     }
 }
