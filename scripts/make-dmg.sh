@@ -1,17 +1,15 @@
 #!/bin/bash
-# 在本机终端里生成给同事的 DMG。磁盘映像需要图形会话，不能在后台代理里挂载。
+# 生成给同事的安装包。当前系统把新建磁盘映像挂成只读，所以做成 pkg，而不是 DMG。
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 APP="$ROOT/build/Build/Products/Release/NextUp.app"
-STAGE="$(mktemp -d /tmp/nextup-dmg-stage.XXXXXX)"
-RW="$(mktemp /tmp/nextup-rw.XXXXXX).dmg"
-MOUNT="$(mktemp -d /tmp/nextup-mount.XXXXXX)"
-OUT="$ROOT/dist/NextUp.dmg"
+STAGE="$(mktemp -d /tmp/nextup-pkg-stage.XXXXXX)"
+OUT="$ROOT/dist/NextUp.pkg"
+NOTE="$ROOT/dist/先看这里.txt"
 
 cleanup() {
-  hdiutil detach "$MOUNT" >/dev/null 2>&1 || true
-  rm -rf "$STAGE" "$MOUNT" "$RW"
+  rm -rf "$STAGE"
 }
 trap cleanup EXIT
 
@@ -23,10 +21,18 @@ if [[ ! -d "$APP" ]]; then
 fi
 
 mkdir -p "$ROOT/dist"
-rm -f "$RW"
-cp -R "$APP" "$STAGE/NextUp.app"
-cat > "$STAGE/先看这里.txt" << 'EOF'
-把 Next Up 拖到右边的「应用程序」。
+COPYFILE_DISABLE=1 cp -R "$APP" "$STAGE/NextUp.app"
+rm -f "$OUT"
+pkgbuild \
+  --root "$STAGE" \
+  --install-location /Applications \
+  --identifier com.example.nextup \
+  --version 1.0 \
+  --ownership recommended \
+  "$OUT"
+
+cat > "$NOTE" << 'EOF'
+双击 NextUp.pkg，按提示安装。装完后在「应用程序」里打开 Next Up。
 
 需要 macOS 15 或更高。这个安装包没有 Apple 开发者签名，第一次打开可能会被系统拦住。
 
@@ -41,14 +47,5 @@ cat > "$STAGE/先看这里.txt" << 'EOF'
 ~/Library/Application Support/NextUp/
 EOF
 
-hdiutil create -size 30m -fs HFS+ -volname "Next Up" "$RW"
-hdiutil attach "$RW" -mountpoint "$MOUNT" -nobrowse
-cp -R "$STAGE/NextUp.app" "$MOUNT/NextUp.app"
-cp "$STAGE/先看这里.txt" "$MOUNT/先看这里.txt"
-ln -s /Applications "$MOUNT/Applications"
-sync
-hdiutil detach "$MOUNT"
-rm -f "$OUT"
-hdiutil convert "$RW" -format UDZO -o "$OUT"
 echo "已生成 $OUT"
-ls -lh "$OUT"
+ls -lh "$OUT" "$NOTE"
