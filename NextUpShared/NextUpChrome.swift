@@ -45,6 +45,9 @@ public enum NextUpChrome {
     public static let windowRowPadding: CGFloat = 8
     public static let windowIndent: CGFloat = 34
 
+    /// 设置分组和浮层。比系统小容器收一档，短卡片不会变成胶囊。
+    public static let containerRadius: CGFloat = 8
+
     public static let pressScale: CGFloat = 0.96
     public static let liftScale: CGFloat = 1.02
     public static let parentCheckStart: CGFloat = 0.9

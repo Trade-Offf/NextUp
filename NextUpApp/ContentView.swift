@@ -82,7 +82,7 @@ struct ContentView: View {
 
     private var navigationSubtitle: String {
         guard store.loadError == nil else { return "" }
-        let count = TodoSorting.incompleteCount(store.document.items)
+        let count = TodoSorting.widgetStats(store.document.items, now: Date(), calendar: .current).unfinished
         return count == 0 ? "" : Copy.openCount(count, store.language)
     }
 
@@ -681,19 +681,21 @@ private struct ElasticTaskRow: View {
                 }
             }
         }
-        .sheet(isPresented: $pickingDeadline) {
-            DeadlinePicker(
-                item: item,
-                language: store.language,
-                onConfirm: { date in
-                    pickingDeadline = false
-                    let calendar = Calendar.current
-                    guard let day = DueDate.dayString(from: date, calendar: calendar),
-                          let time = DueDate.timeString(from: date, calendar: calendar) else { return }
-                    store.setDeadline(id: item.id, dueDate: day, dueTime: time)
-                },
-                onCancel: { pickingDeadline = false }
-            )
+        .background {
+            NextUpRoundedSheet(isPresented: $pickingDeadline) {
+                DeadlinePicker(
+                    item: item,
+                    language: store.language,
+                    onConfirm: { date in
+                        pickingDeadline = false
+                        let calendar = Calendar.current
+                        guard let day = DueDate.dayString(from: date, calendar: calendar),
+                              let time = DueDate.timeString(from: date, calendar: calendar) else { return }
+                        store.setDeadline(id: item.id, dueDate: day, dueTime: time)
+                    },
+                    onCancel: { pickingDeadline = false }
+                )
+            }
         }
         .accessibilityElement(children: .contain)
         .onChange(of: editing) { _, isEditing in
@@ -1014,7 +1016,9 @@ private struct DeadlinePicker: View {
             HStack {
                 Spacer()
                 Button(Copy.text(.cancel, language), action: onCancel)
+                    .buttonStyle(.bordered)
                 Button(Copy.text(.ok, language)) { onConfirm(selection) }
+                    .buttonStyle(.borderedProminent)
                     .keyboardShortcut(.defaultAction)
             }
         }

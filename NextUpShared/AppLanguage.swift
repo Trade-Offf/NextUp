@@ -46,6 +46,7 @@ public enum AppPreferences {
     private struct Payload: Codable {
         var language: String?
         var shortcuts: [String: OptionalBinding]?
+        var showsWidgetBadge: Bool? = nil
 
         struct OptionalBinding: Codable {
             var value: ShortcutBinding?
@@ -79,6 +80,11 @@ public enum AppPreferences {
         return AppLanguage(rawValue: raw)
     }
 
+    /// 缺省关闭。中号小组件保持系统卡片的样子，想看柴犬的人再打开。
+    public static func showsWidgetBadge() -> Bool {
+        read()?.showsWidgetBadge ?? false
+    }
+
     public static func shortcutMap() -> ShortcutMap {
         guard let shortcuts = read()?.shortcuts else { return ShortcutMap() }
         var exported: [String: ShortcutBinding?] = [:]
@@ -104,10 +110,20 @@ public enum AppPreferences {
         try write(payload)
     }
 
+    public static func saveShowsWidgetBadge(_ shows: Bool) throws {
+        var payload = read() ?? Payload(language: nil, shortcuts: nil)
+        payload.showsWidgetBadge = shows
+        try write(payload)
+    }
+
     private static func read() -> Payload? {
         guard let url = fileURL(), let data = try? Data(contentsOf: url) else { return nil }
         guard let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return nil }
-        return Payload(language: object["language"] as? String, shortcuts: bindings(from: object["shortcuts"]))
+        return Payload(
+            language: object["language"] as? String,
+            shortcuts: bindings(from: object["shortcuts"]),
+            showsWidgetBadge: object["showsWidgetBadge"] as? Bool
+        )
     }
 
     /// 某一条键位写坏时丢掉这一条，语言和其余键位还在。
@@ -222,6 +238,7 @@ public enum Copy {
         case widgetOpenItems
         case widgetUpcoming
         case widgetUndated
+        case showWidgetBadge
         case shortcuts
         case customizeShortcuts
         case pressShortcut
@@ -459,6 +476,7 @@ public enum Copy {
         .widgetOpenItems: "项未完成",
         .widgetUpcoming: "以后",
         .widgetUndated: "未排期",
+        .showWidgetBadge: "显示徽章",
         .shortcuts: "快捷键",
         .customizeShortcuts: "自定义",
         .pressShortcut: "请按下快捷键",
@@ -545,6 +563,7 @@ public enum Copy {
         .widgetOpenItems: "open",
         .widgetUpcoming: "Later",
         .widgetUndated: "Unscheduled",
+        .showWidgetBadge: "Show Badge",
         .shortcuts: "Keyboard Shortcuts",
         .customizeShortcuts: "Customize",
         .pressShortcut: "Type a shortcut",
