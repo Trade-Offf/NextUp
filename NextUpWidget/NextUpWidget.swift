@@ -42,15 +42,16 @@ struct WidgetEntry: TimelineEntry {
     let largeRows: [WidgetRow]
     let isReadFailure: Bool
     let celebrates: Bool
+    let showsBadge: Bool
 
     static let celebrationDuration: TimeInterval = 4
 
     static func empty(date: Date) -> WidgetEntry {
-        WidgetEntry(date: date, unfinishedCount: 0, stats: .zero, largeRows: [], isReadFailure: false, celebrates: false)
+        WidgetEntry(date: date, unfinishedCount: 0, stats: .zero, largeRows: [], isReadFailure: false, celebrates: false, showsBadge: false)
     }
 
     static func readFailure(date: Date) -> WidgetEntry {
-        WidgetEntry(date: date, unfinishedCount: 0, stats: .zero, largeRows: [], isReadFailure: true, celebrates: false)
+        WidgetEntry(date: date, unfinishedCount: 0, stats: .zero, largeRows: [], isReadFailure: true, celebrates: false, showsBadge: false)
     }
 
     static var preview: WidgetEntry {
@@ -67,7 +68,8 @@ struct WidgetEntry: TimelineEntry {
                 WidgetRow(id: "preview-3", title: "更新 i18n 方案", trailing: waiting, isOverdue: false)
             ],
             isReadFailure: false,
-            celebrates: false
+            celebrates: false,
+            showsBadge: false
         )
     }
 
@@ -86,7 +88,8 @@ struct WidgetEntry: TimelineEntry {
                 )
             ],
             isReadFailure: false,
-            celebrates: false
+            celebrates: false,
+            showsBadge: false
         )
     }
 }
@@ -108,7 +111,7 @@ struct NextUpProvider: TimelineProvider {
             return
         }
         var moments: [Date] = []
-        if let latest = items.compactMap(\.completedAt).max() {
+        if AppPreferences.showsWidgetBadge(), let latest = items.compactMap(\.completedAt).max() {
             let until = latest.addingTimeInterval(WidgetEntry.celebrationDuration)
             if until > now {
                 moments.append(until)
@@ -127,15 +130,17 @@ struct NextUpProvider: TimelineProvider {
             let resolved = try items ?? TodoRepository.localStore().load().items
             let calendar = Calendar.current
             let stats = TodoSorting.widgetStats(resolved, now: now, calendar: calendar)
+            let showsBadge = AppPreferences.showsWidgetBadge()
             let latest = resolved.compactMap(\.completedAt).max()
-            let celebrates = latest.map { now.timeIntervalSince($0) < WidgetEntry.celebrationDuration && now.timeIntervalSince($0) > -1 } ?? false
+            let celebrates = showsBadge && (latest.map { now.timeIntervalSince($0) < WidgetEntry.celebrationDuration && now.timeIntervalSince($0) > -1 } ?? false)
             return WidgetEntry(
                 date: now,
                 unfinishedCount: stats.unfinished,
                 stats: stats,
                 largeRows: largeWidgetRows(resolved, now: now, calendar: calendar),
                 isReadFailure: false,
-                celebrates: celebrates
+                celebrates: celebrates,
+                showsBadge: showsBadge
             )
         } catch {
             return .readFailure(date: now)
@@ -206,7 +211,7 @@ struct NextUpWidgetView: View {
                 }
             }
             .overlay(alignment: .topTrailing) {
-                if entry.isReadFailure || entry.stats.unfinished == 0 {
+                if entry.showsBadge && (entry.isReadFailure || entry.stats.unfinished == 0) {
                     brandBadge
                 }
             }
@@ -256,8 +261,10 @@ struct NextUpWidgetView: View {
                         .font(.system(size: NextUpChrome.dateSize))
                         .foregroundStyle(.secondary)
                 }
-                Spacer(minLength: 8)
-                brandBadge
+                if entry.showsBadge {
+                    Spacer(minLength: 8)
+                    brandBadge
+                }
             }
             HStack(alignment: .top, spacing: 0) {
                 statCell(Copy.text(.overdue, language), entry.stats.overdue, emphasized: entry.stats.overdue > 0)

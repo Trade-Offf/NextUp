@@ -81,6 +81,25 @@ final class ShortcutMapTests: XCTestCase {
         XCTAssertEqual(AppPreferences.shortcutMap().binding(for: .redo), ShortcutBinding(key: "y", modifiers: [.command]))
     }
 
+    func testBadgeStaysOffUntilTurnedOnAndSurvivesOtherSaves() throws {
+        let original = #"{"language":"zh-Hans"}"#.data(using: .utf8)!
+        try original.write(to: AppPreferences.fileOverride!)
+        XCTAssertFalse(AppPreferences.showsWidgetBadge())
+
+        try AppPreferences.saveShowsWidgetBadge(true)
+        try AppPreferences.save(.english)
+        var map = ShortcutMap()
+        map.clear(.newTask)
+        try AppPreferences.save(map)
+        XCTAssertTrue(AppPreferences.showsWidgetBadge())
+        XCTAssertEqual(AppPreferences.chosen(), .english)
+        XCTAssertNil(AppPreferences.shortcutMap().binding(for: .newTask))
+
+        try AppPreferences.saveShowsWidgetBadge(false)
+        XCTAssertFalse(AppPreferences.showsWidgetBadge())
+        XCTAssertEqual(AppPreferences.chosen(), .english)
+    }
+
     func testAssigningTheDefaultDropsTheOverride() throws {
         var map = ShortcutMap()
         map.assign(ShortcutBinding(key: "y", modifiers: [.command]), to: .undo)

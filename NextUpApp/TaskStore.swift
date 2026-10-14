@@ -11,6 +11,7 @@ final class TaskStore: ObservableObject {
     @Published var highlightedID: UUID?
     @Published private(set) var settlingIDs: Set<UUID> = []
     @Published private(set) var language = AppLanguage.resolved
+    @Published private(set) var showsWidgetBadge = AppPreferences.showsWidgetBadge()
     @Published private(set) var shortcuts = AppPreferences.shortcutMap()
     @Published private(set) var isRecordingShortcut = false
     @Published private(set) var recordingCommand: AppCommand?
@@ -610,6 +611,18 @@ final class TaskStore: ObservableObject {
         DispatchQueue.main.async {
             guard manager?.isUndoRegistrationEnabled == false else { return }
             manager?.enableUndoRegistration()
+        }
+    }
+
+    func setShowsWidgetBadge(_ shows: Bool) {
+        do {
+            try AppPreferences.saveShowsWidgetBadge(shows)
+            showsWidgetBadge = shows
+            reloadWidget()
+        } catch let error as StoreError {
+            notice = error.message
+        } catch {
+            notice = StoreError.writeFailed.message
         }
     }
 
