@@ -1,7 +1,6 @@
 import AppKit
 import Foundation
 import NextUpShared
-import WidgetKit
 
 @MainActor
 final class TaskStore: ObservableObject {
@@ -891,8 +890,6 @@ final class TaskStore: ObservableObject {
     }
 
     private func reloadWidget() {
-        for kind in AppIdentity.widgetKinds {
-            WidgetCenter.shared.reloadTimelines(ofKind: kind)
-        }
+        AppIdentity.reloadWidgets()
     }
 }

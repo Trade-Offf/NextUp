@@ -1,7 +1,6 @@
 import AppIntents
 import Foundation
 import NextUpShared
-import WidgetKit
 
 struct CompleteTodoIntent: AppIntent {
     static var title: LocalizedStringResource = "完成任务"
@@ -29,9 +28,7 @@ struct CompleteTodoIntent: AppIntent {
         } catch {
             return .result()
         }
-        for kind in AppIdentity.widgetKinds {
-            WidgetCenter.shared.reloadTimelines(ofKind: kind)
-        }
+        AppIdentity.reloadWidgets()
         return .result()
     }
 }

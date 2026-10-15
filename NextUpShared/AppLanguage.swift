@@ -205,7 +205,6 @@ public enum Copy {
         case widgetCountDescription
         case widgetListName
         case widgetListDescription
-        case widgetPlacedDescription
         case unrecognizedLink
         case missingTask
         case undoAdd
@@ -440,10 +439,9 @@ public enum Copy {
         .restoreNotNeeded: "当前数据可以读取，未用备份覆盖。",
         .restored: "已从最近的备份恢复。",
         .widgetCountName: "还剩多少",
-        .widgetCountDescription: "逾期、今天、以后、未排期各有多少",
+        .widgetCountDescription: "逾期、今天、以后、未排期",
         .widgetListName: "接下来",
-        .widgetListDescription: "按日期列出接下来要做的事",
-        .widgetPlacedDescription: "中号看还剩多少，大号按日期列出接下来要做的事",
+        .widgetListDescription: "按日期列出",
         .unrecognizedLink: "这个链接无法识别。",
         .missingTask: "这条任务已经不在了。",
         .undoAdd: "添加任务",
@@ -527,10 +525,9 @@ public enum Copy {
         .restoreNotNeeded: "The current data can be read, so the backup was left in place.",
         .restored: "Restored from the latest backup.",
         .widgetCountName: "What's Left",
-        .widgetCountDescription: "How many are overdue, due today, later, or unscheduled.",
+        .widgetCountDescription: "Overdue, today, later, none",
         .widgetListName: "Next Up",
-        .widgetListDescription: "Lists what's next by date.",
-        .widgetPlacedDescription: "Medium shows how many are left. Large lists what's next by date.",
+        .widgetListDescription: "By date",
         .unrecognizedLink: "This link can’t be opened.",
         .missingTask: "That task is already gone.",
         .undoAdd: "Add Task",

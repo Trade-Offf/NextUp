@@ -1,11 +1,12 @@
 #!/bin/bash
-# 生成给同事的安装包。当前系统把新建磁盘映像挂成只读，所以做成 pkg，而不是 DMG。
+# 生成给同事的压缩包。未签名的 pkg 会被系统拒绝，磁盘映像在这台系统上又挂不成可写，所以只打包应用本身。
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-APP="$ROOT/build/Build/Products/Release/NextUp.app"
-STAGE="$(mktemp -d /tmp/nextup-pkg-stage.XXXXXX)"
-OUT="$ROOT/dist/NextUp.pkg"
+DERIVED="$ROOT/build/release"
+APP="$DERIVED/Build/Products/Release/NextUp.app"
+STAGE="$(mktemp -d /tmp/nextup-zip-stage.XXXXXX)"
+OUT="$ROOT/dist/NextUp.zip"
 NOTE="$ROOT/dist/先看这里.txt"
 
 cleanup() {
@@ -17,24 +18,20 @@ if [[ ! -d "$APP" ]]; then
   echo "找不到 Release 构建，开始编译…"
   DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer \
     xcodebuild -project "$ROOT/NextUp.xcodeproj" -scheme NextUp -configuration Release \
-    -destination 'platform=macOS' -derivedDataPath "$ROOT/build" build
+    -destination 'platform=macOS' -derivedDataPath "$DERIVED" build
 fi
 
 mkdir -p "$ROOT/dist"
-COPYFILE_DISABLE=1 cp -R "$APP" "$STAGE/NextUp.app"
+rm -rf "$STAGE/NextUp.app"
+COPYFILE_DISABLE=1 ditto "$APP" "$STAGE/NextUp.app"
+codesign --verify --deep --strict "$STAGE/NextUp.app"
 rm -f "$OUT"
-pkgbuild \
-  --root "$STAGE" \
-  --install-location /Applications \
-  --identifier com.example.nextup \
-  --version 1.0 \
-  --ownership recommended \
-  "$OUT"
+ditto -c -k --keepParent "$STAGE/NextUp.app" "$OUT"
 
 cat > "$NOTE" << 'EOF'
-双击 NextUp.pkg，按提示安装。装完后在「应用程序」里打开 Next Up。
+解压后，把 Next Up 拖进「应用程序」。
 
-需要 macOS 15 或更高。这个安装包没有 Apple 开发者签名，第一次打开可能会被系统拦住。
+需要 macOS 15 或更高。这个应用没有 Apple 开发者签名，第一次打开可能会被系统拦住。
 
 如果提示无法打开或已损坏：
 1. 打开「应用程序」，按住 Control 点 Next Up，选「打开」。
