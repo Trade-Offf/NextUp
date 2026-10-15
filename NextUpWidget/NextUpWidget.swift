@@ -542,19 +542,6 @@ private struct WidgetChrome: View {
     }
 }
 
-struct NextUpWidget: Widget {
-    let kind: String = AppIdentity.placeholderWidgetKind
-
-    var body: some WidgetConfiguration {
-        StaticConfiguration(kind: kind, provider: NextUpProvider()) { entry in
-            WidgetChrome(entry: entry)
-        }
-        .configurationDisplayName(Copy.text(.windowTitle, AppLanguage.resolved))
-        .description(Copy.text(.widgetPlacedDescription, AppLanguage.resolved))
-        .supportedFamilies([.systemMedium, .systemLarge])
-    }
-}
-
 struct NextUpCountWidget: Widget {
     let kind: String = AppIdentity.countWidgetKind
 

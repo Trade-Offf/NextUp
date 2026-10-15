@@ -1,4 +1,5 @@
 import Foundation
+import WidgetKit
 
 /// 运行时标识从各 Target 的 Info.plist 读取。
 /// plist 中的值由 Config/NextUp.xcconfig 在构建时注入。
@@ -11,7 +12,7 @@ public enum AppIdentity {
     public static let placeholderWidgetKind = "NextUpWidget"
     public static let countWidgetKind = "NextUpCount"
     public static let listWidgetKind = "NextUpList"
-    public static let widgetKinds = [placeholderWidgetKind, countWidgetKind, listWidgetKind]
+    public static let widgetKinds = [countWidgetKind, listWidgetKind]
 
     public static let appGroupInfoKey = "NextUpAppGroupID"
     public static let urlSchemeInfoKey = "NextUpURLScheme"
@@ -38,5 +39,14 @@ public enum AppIdentity {
         guard let value = info[key] as? String else { return nil }
         let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmed.isEmpty ? nil : trimmed
+    }
+
+    /// 时间线默认等到本地午夜才重读文件。数据变了之后从这里刷新，主应用和小组件勾选走同一处。
+    /// 全部刷新覆盖已经放在桌面上的卡片，点名刷新覆盖当前两种 kind。旧 kind 不放回画廊。
+    public static func reloadWidgets() {
+        WidgetCenter.shared.reloadAllTimelines()
+        for kind in widgetKinds {
+            WidgetCenter.shared.reloadTimelines(ofKind: kind)
+        }
     }
 }
