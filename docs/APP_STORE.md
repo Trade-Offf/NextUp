@@ -15,12 +15,12 @@
 
 - 名称：Next TODO
 - 副标题：Simple to-dos, always in view
-- 推广文本：A private to-do list for your Mac. Add tasks from the menu bar and see what's next right on your desktop. No account, no cloud.
+- 推广文本：A to-do list that does only what a to-do list should. No account, no tracking, no clutter. Just clean, native design that feels like it shipped with your Mac.
 - 关键词：todo,tasks,checklist,widget,menu bar,reminder,planner,outline,productivity,focus,local,private
 - 描述：
 
 ```
-Next TODO is a small, quiet to-do list for your Mac. Write things down, see what comes next, and get on with your day.
+Most to-do apps want an account, your data and your attention. Next TODO wants none of it. It is a small, quiet list that looks and feels like it came with your Mac: write things down, see what's next, and get on with your day.
 
 WRITE FAST
 Type a task and press Return. Paste a whole outline and it becomes a task list with sub-tasks, up to three levels deep. Right-click to rename, set a due date, or delete. Undo and redo work the way you expect.
@@ -53,12 +53,12 @@ Available in English, English (Australia), Français, 日本語, 简体中文 an
 
 - 名称：Next TODO
 - 副标题：Vos tâches, toujours en vue（29 字）
-- 推广文本：Une liste de tâches privée pour votre Mac. Ajoutez une tâche depuis la barre des menus et voyez la suite sur votre bureau. Sans compte, sans cloud.
+- 推广文本：Une liste de tâches qui fait ce qu'elle doit, rien de plus. Sans compte, sans pistage, sans fioritures. Un design épuré et natif, comme livré avec votre Mac.
 - 关键词：todo,tâches,liste,widget,barre des menus,rappel,planning,plan,productivité,focus,local,privé
 - 描述：
 
 ```
-Next TODO est une petite liste de tâches discrète pour votre Mac. Notez, voyez ce qui vient ensuite, et avancez.
+La plupart des apps de tâches veulent un compte, vos données et votre attention. Next TODO ne veut rien de tout ça. C'est une petite liste discrète qui a l'air et la sensation d'être livrée avec votre Mac : notez, voyez la suite, et avancez.
 
 NOTEZ VITE
 Saisissez une tâche et appuyez sur Entrée. Collez un plan entier : il devient une liste avec sous-tâches, sur trois niveaux. Clic droit pour renommer, fixer une échéance ou supprimer. Annuler et rétablir fonctionnent comme prévu.
@@ -84,12 +84,12 @@ Disponible en English, English (Australia), Français, 日本語, 简体中文 e
 
 - 名称：Next TODO
 - 副标题：次にやることが、いつも見える
-- 推广文本：Mac のための、プライベートなToDoリスト。メニューバーからすばやく追加し、次にやることをデスクトップで確認。アカウント不要、クラウド不使用。
+- 推广文本：ToDoリストに必要なことだけ。アカウントも、トラッキングも、余計な装飾もありません。Mac に最初から入っていたような、すっきりとしたネイティブなデザイン。
 - 关键词：ToDo,タスク,チェックリスト,ウィジェット,メニューバー,リマインダー,予定,アウトライン,生産性,集中,ローカル,プライバシー
 - 描述：
 
 ```
-Next TODO は、Mac のための小さくて静かな ToDo リストです。書き留めて、次にやることを見て、一日を進めましょう。
+多くの ToDo アプリは、アカウントも、あなたのデータも、あなたの注意も求めてきます。Next TODO は何も求めません。Mac に最初から入っていたような見た目と使い心地の、小さくて静かなリストです。書き留めて、次にやることを見て、一日を進めましょう。
 
 すばやく書く
 タスクを入力して Return を押すだけ。アウトラインを貼り付けると、最大3階層のサブタスク付きリストになります。右クリックで名前の変更、期限の設定、削除ができます。取り消しとやり直しにも対応しています。
@@ -115,12 +115,12 @@ English、English (Australia)、Français、日本語、简体中文、繁體中
 
 - 名称：Next TODO
 - 副标题：接下来做什么，一眼就看见
-- 推广文本：Mac 上的私人待办。在菜单栏随手记，在桌面上看接下来要做的事。不登录，不上云。
+- 推广文本：只做待办该做的事。不登录，不收集信息，没有花里胡哨。干净克制，像 macOS 自带的功能一样自然。
 - 关键词：待办,任务,清单,小组件,菜单栏,提醒,计划,大纲,效率,专注,本地,隐私
 - 描述：
 
 ```
-Next TODO 是 Mac 上一份小而安静的待办清单。记下来，看清接下来要做什么，然后继续你的一天。
+市面上的待办应用，总想要你的账号、你的信息和你的注意力。Next TODO 什么都不要。它是一份小而安静的清单，看上去和用起来都像 Mac 自带的功能：记下来，看清接下来要做什么，然后继续你的一天。
 
 记得快
 输入任务，按回车。粘贴一整段大纲，会变成带子任务的清单，最多三层。右键可以改标题、设置截止时间或删除。支持撤销和重做。
@@ -146,12 +146,12 @@ Next TODO 是 Mac 上一份小而安静的待办清单。记下来，看清接�
 
 - 名称：Next TODO
 - 副标题：接下來做什麼，一眼就看見
-- 推广文本：Mac 上的私人待辦。在選單列隨手記，在桌面上看接下來要做的事。不登入，不上雲端。
+- 推广文本：只做待辦該做的事。不登入，不蒐集資訊，沒有花俏的裝飾。乾淨克制，像 macOS 內建的功能一樣自然。
 - 关键词：待辦,任務,清單,小工具,選單列,提醒,計畫,大綱,效率,專注,本機,隱私
 - 描述：
 
 ```
-Next TODO 是 Mac 上一份小而安靜的待辦清單。記下來，看清接下來要做什麼，然後繼續你的一天。
+市面上的待辦應用，總想要你的帳號、你的資訊和你的注意力。Next TODO 什麼都不要。它是一份小而安靜的清單，看起來和用起來都像 Mac 內建的功能：記下來，看清接下來要做什麼，然後繼續你的一天。
 
 記得快
 輸入任務，按下 Return。貼上一整段大綱，會變成帶子任務的清單，最多三層。按右鍵可以修改標題、設定截止時間或刪除。支援還原和重做。
