@@ -184,6 +184,6 @@ To see the widgets: open Edit Widgets on the desktop, search "Next TODO", and ad
 
 - 隐私政策：`docs/PRIVACY.md`，需要一个公开可访问的链接。
 - 支持网址：同样需要公开链接。
-- GitLab 仓库设为 Public 后，可用下面两个地址：
+- GitHub 仓库设为 Public 后，可用下面两个地址：
   - 隐私政策：`https://github.com/Trade-Offf/NextUp/blob/main/docs/PRIVACY.md`
   - 支持网址：`https://github.com/Trade-Offf/NextUp`
