@@ -3,10 +3,10 @@ import Foundation
 import NextUpShared
 
 struct CompleteTodoIntent: AppIntent {
-    static var title: LocalizedStringResource = "完成任务"
+    static var title: LocalizedStringResource = "Complete Task"
     static var openAppWhenRun = false
 
-    @Parameter(title: "任务")
+    @Parameter(title: "Task")
     var itemID: String
 
     init() {
@@ -20,12 +20,10 @@ struct CompleteTodoIntent: AppIntent {
     func perform() async throws -> some IntentResult {
         guard let id = UUID(uuidString: itemID) else { return .result() }
         do {
-            // let repository = try TodoRepository.inAppGroup()
-            let repository = try TodoRepository.localStore()
+            let repository = try TodoRepository.inAppGroup()
             _ = try repository.setStatus(id: id, status: .done, now: Date())
-        } catch StoreError.notFound {
-            return .result()
         } catch {
+            // 任务已被删除或暂时读不到：不打开应用，也不报错，下一次刷新会显示最新状态。
             return .result()
         }
         AppIdentity.reloadWidgets()

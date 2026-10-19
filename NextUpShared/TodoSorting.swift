@@ -52,12 +52,6 @@ public enum TodoSorting {
         return instants.sorted()
     }
 
-    public static func incompleteCount(_ items: [TodoItem]) -> Int {
-        items.reduce(into: 0) { count, item in
-            if item.status != .done { count += 1 }
-        }
-    }
-
     public static func incomplete(_ items: [TodoItem], now: Date, calendar: Calendar) -> [TodoItem] {
         items
             .filter { $0.status != .done }
@@ -67,24 +61,6 @@ public enum TodoSorting {
     public static func widgetItems(_ items: [TodoItem], limit: Int = 3, now: Date, calendar: Calendar) -> [TodoItem] {
         let topLevel = items.filter { $0.parentID == nil }
         return Array(incomplete(topLevel, now: now, calendar: calendar).prefix(max(0, limit)))
-    }
-
-    public static func grouped(_ items: [TodoItem], now: Date, calendar: Calendar) -> (todo: [TodoItem], waiting: [TodoItem], done: [TodoItem]) {
-        let open = incomplete(items, now: now, calendar: calendar)
-        let done = items
-            .filter { $0.status == .done }
-            .sorted { lhs, rhs in
-                let left = lhs.completedAt ?? lhs.updatedAt
-                let right = rhs.completedAt ?? rhs.updatedAt
-                if left != right { return left > right }
-                if lhs.createdAt != rhs.createdAt { return lhs.createdAt < rhs.createdAt }
-                return lhs.id.uuidString < rhs.id.uuidString
-            }
-        return (
-            open.filter { $0.status == .todo },
-            open.filter { $0.status == .waiting },
-            done
-        )
     }
 
     public static func isOrderedBefore(_ lhs: TodoItem, _ rhs: TodoItem, now: Date, calendar: Calendar) -> Bool {

@@ -1,6 +1,18 @@
 import SwiftUI
 import NextUpShared
 
+private struct TextScaleKey: EnvironmentKey {
+    static let defaultValue: CGFloat = 1
+}
+
+extension EnvironmentValues {
+    /// 设置里选的文字大小倍数。
+    var textScale: CGFloat {
+        get { self[TextScaleKey.self] }
+        set { self[TextScaleKey.self] = newValue }
+    }
+}
+
 @main
 struct NextUpApp: App {
     @StateObject private var store = TaskStore()
@@ -9,6 +21,7 @@ struct NextUpApp: App {
         WindowGroup(id: "main") {
             ContentView()
                 .environmentObject(store)
+                .environment(\.textScale, CGFloat(store.textSize.scale))
         }
         .defaultSize(width: AppWindowMetrics.width, height: AppWindowMetrics.height)
         .commands {
@@ -25,6 +38,7 @@ struct NextUpApp: App {
         MenuBarExtra(Copy.text(.windowTitle, store.language), image: "MenuBarDog") {
             QuickAddMenu()
                 .environmentObject(store)
+                .environment(\.textScale, CGFloat(store.textSize.scale))
         }
         .menuBarExtraStyle(.window)
     }

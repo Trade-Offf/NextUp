@@ -10,7 +10,7 @@
           "image-name" : "foreground.png",
           "name" : "Dog",
           "position" : {
-            "scale" : 1.12,
+            "scale" : 1.0,
             "translation-in-points" : [0, 0]
           }
         }

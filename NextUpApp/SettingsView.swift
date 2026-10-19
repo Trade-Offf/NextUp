@@ -28,8 +28,7 @@ private struct GeneralSettings: View {
                             Text(item.nativeName).tag(item)
                         }
                     }
-                    .pickerStyle(.radioGroup)
-                    .horizontalRadioGroupLayout()
+                    .pickerStyle(.menu)
                     .labelsHidden()
                     .fixedSize()
                 }
@@ -44,6 +43,17 @@ private struct GeneralSettings: View {
             }
 
             SettingsCard {
+                settingsRow(Copy.text(.textSize, store.language)) {
+                    Picker(Copy.text(.textSize, store.language), selection: textSize) {
+                        ForEach(TextSize.allCases, id: \.self) { size in
+                            Text(textSizeName(size)).tag(size)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                    .fixedSize()
+                }
+                Divider()
                 settingsRow(Copy.text(.showWidgetBadge, store.language)) {
                     Toggle(Copy.text(.showWidgetBadge, store.language), isOn: showsBadge)
                         .toggleStyle(.switch)
@@ -128,6 +138,18 @@ private struct GeneralSettings: View {
                 if !isPresented { pendingClear = nil }
             }
         )
+    }
+
+    private var textSize: Binding<TextSize> {
+        Binding(get: { store.textSize }, set: { store.selectTextSize($0) })
+    }
+
+    private func textSizeName(_ size: TextSize) -> String {
+        switch size {
+        case .small: return Copy.text(.textSizeSmall, store.language)
+        case .medium: return Copy.text(.textSizeMedium, store.language)
+        case .large: return Copy.text(.textSizeLarge, store.language)
+        }
     }
 
     private var showsBadge: Binding<Bool> {

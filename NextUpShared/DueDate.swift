@@ -107,8 +107,11 @@ public enum DueDate {
         return calendar.date(byAdding: .day, value: 1, to: start)
     }
 
-    public static func monthDayLabel(_ raw: String?) -> String? {
+    public static func monthDayLabel(_ raw: String?, dayFirst: Bool = false) -> String? {
         guard let raw, let parts = yearMonthDay(raw) else { return nil }
+        if dayFirst {
+            return String(format: "%02d/%02d", parts.day, parts.month)
+        }
         return String(format: "%02d/%02d", parts.month, parts.day)
     }
 
@@ -185,10 +188,10 @@ public enum TaskAuxiliaryText {
             }
             return TaskAuxiliary(text: Copy.text(.today, language), emphasis: .neutral)
         case (_, .upcoming):
-            if let day = DueDate.monthDayLabel(dueDate), let time = DueDate.canonicalTime(dueTime) {
+            if let day = DueDate.monthDayLabel(dueDate, dayFirst: language.writesDayFirst), let time = DueDate.canonicalTime(dueTime) {
                 return TaskAuxiliary(text: "\(day) \(time)", emphasis: .neutral)
             }
-            return TaskAuxiliary(text: DueDate.monthDayLabel(dueDate), emphasis: .neutral)
+            return TaskAuxiliary(text: DueDate.monthDayLabel(dueDate, dayFirst: language.writesDayFirst), emphasis: .neutral)
         case (.waiting, .undated):
             return TaskAuxiliary(text: Copy.text(.waiting, language), emphasis: .neutral)
         case (.todo, .undated):

@@ -10,6 +10,7 @@ final class TaskStore: ObservableObject {
     @Published var highlightedID: UUID?
     @Published private(set) var settlingIDs: Set<UUID> = []
     @Published private(set) var language = AppLanguage.resolved
+    @Published private(set) var textSize = AppPreferences.textSize()
     @Published private(set) var showsWidgetBadge = AppPreferences.showsWidgetBadge()
     @Published private(set) var shortcuts = AppPreferences.shortcutMap()
     @Published private(set) var isRecordingShortcut = false
@@ -42,9 +43,40 @@ final class TaskStore: ObservableObject {
     private var settleTask: Task<Void, Never>?
     private var selectionAnchor: UUID?
     private var typingTokens: Set<String> = []
+    private var watcher: DispatchSourceFileSystemObject?
+    private var watchDebounce: Task<Void, Never>?
 
     func reload() {
         reload(animating: true, fadeRemoval: false)
+    }
+
+    /// 小组件在另一个进程里改了任务（比如点圆圈完成）时，窗口不用等到重新激活就能跟上。
+    func watchForExternalChanges() {
+        guard watcher == nil, let repository = try? currentRepository() else { return }
+        let descriptor = Darwin.open(repository.directory.path, O_EVTONLY)
+        guard descriptor >= 0 else { return }
+        let source = DispatchSource.makeFileSystemObjectSource(
+            fileDescriptor: descriptor,
+            eventMask: [.write, .rename, .delete],
+            queue: .main
+        )
+        source.setEventHandler { [weak self] in
+            MainActor.assumeIsolated { self?.scheduleExternalReload() }
+        }
+        source.setCancelHandler { close(descriptor) }
+        source.resume()
+        watcher = source
+    }
+
+    private func scheduleExternalReload() {
+        watchDebounce?.cancel()
+        watchDebounce = Task { @MainActor [weak self] in
+            try? await Task.sleep(nanoseconds: 250_000_000)
+            guard !Task.isCancelled, let self else { return }
+            // 自己写入也会触发这里。内容没变就不重绘，避免行动画重复播放。
+            guard let latest = try? self.currentRepository().load(), latest != self.document else { return }
+            self.reload(animating: true, fadeRemoval: false)
+        }
     }
 
     func add(title: String, project: String? = nil, assignee: String? = nil, dueDate: String? = nil, status: TodoStatus = .todo, parentID: UUID? = nil) throws {
@@ -625,6 +657,18 @@ final class TaskStore: ObservableObject {
         }
     }
 
+    func selectTextSize(_ size: TextSize) {
+        guard size != textSize else { return }
+        do {
+            try AppPreferences.save(size)
+            textSize = size
+        } catch let error as StoreError {
+            notice = error.message
+        } catch {
+            notice = StoreError.writeFailed.message
+        }
+    }
+
     func selectLanguage(_ language: AppLanguage) {
         do {
             try AppPreferences.save(language)
@@ -882,9 +926,7 @@ final class TaskStore: ObservableObject {
 
     private func currentRepository() throws -> TodoRepository {
         if let repository { return repository }
-        // 有 Apple ID 和 App Group 后再改回：
-        // let repository = try TodoRepository.inAppGroup()
-        let repository = try TodoRepository.localStore()
+        let repository = try TodoRepository.inAppGroup()
         self.repository = repository
         return repository
     }

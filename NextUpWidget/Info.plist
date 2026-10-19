@@ -11,7 +11,5 @@
 	<string>$(NEXTUP_APP_GROUP_ID)</string>
 	<key>NextUpURLScheme</key>
 	<string>$(NEXTUP_URL_SCHEME)</string>
-	<key>NextUpWidgetKind</key>
-	<string>$(NEXTUP_WIDGET_KIND)</string>
 </dict>
 </plist>

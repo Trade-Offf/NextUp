@@ -55,23 +55,9 @@ public struct TodoRepository: Sendable {
         } catch {
             throw StoreError.containerUnavailable
         }
-        return TodoRepository(directory: directory)
-    }
-
-    public static func localStore(fileManager: FileManager = .default) throws -> TodoRepository {
-        let directory = realHomeDirectory()
-            .appendingPathComponent("Library", isDirectory: true)
-            .appendingPathComponent("Application Support", isDirectory: true)
-            .appendingPathComponent("NextUp", isDirectory: true)
-        let probe = directory.appendingPathComponent(".access")
-        do {
-            try fileManager.createDirectory(at: directory, withIntermediateDirectories: true)
-            try Data().write(to: probe, options: .atomic)
-            try fileManager.removeItem(at: probe)
-        } catch {
-            throw StoreError.containerUnavailable
-        }
-        return TodoRepository(directory: directory)
+        let repository = TodoRepository(directory: directory)
+        repository.migrateLegacyFilesIfNeeded(fileManager: fileManager)
+        return repository
     }
 
     private static func realHomeDirectory() -> URL {
@@ -79,6 +65,21 @@ public struct TodoRepository: Sendable {
             return URL(fileURLWithFileSystemRepresentation: directory, isDirectory: true, relativeTo: nil)
         }
         return FileManager.default.homeDirectoryForCurrentUser
+    }
+
+    /// 上架前任务写在用户主目录。组容器里还没有文件时复制一次；沙盒读不到旧目录就跳过。
+    private func migrateLegacyFilesIfNeeded(fileManager: FileManager) {
+        let legacy = Self.realHomeDirectory()
+            .appendingPathComponent("Library", isDirectory: true)
+            .appendingPathComponent("Application Support", isDirectory: true)
+            .appendingPathComponent("NextUp", isDirectory: true)
+        for name in ["todos.json", "todos.json.bak", "preferences.json"] {
+            let source = legacy.appendingPathComponent(name)
+            let destination = directory.appendingPathComponent(name)
+            guard fileManager.fileExists(atPath: source.path),
+                  !fileManager.fileExists(atPath: destination.path) else { continue }
+            try? fileManager.copyItem(at: source, to: destination)
+        }
     }
 
     public var dataFileURL: URL { directory.appendingPathComponent("todos.json") }

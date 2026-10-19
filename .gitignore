@@ -4,3 +4,11 @@ DerivedData/
 .DS_Store
 xcuserdata/
 *.xcuserstate
+
+# AI 工具（impeccable）安装文件，不提交
+.agents/
+.claude/
+.codex/
+.cursor/agents/
+.cursor/skills/
+.cursor/hooks.json

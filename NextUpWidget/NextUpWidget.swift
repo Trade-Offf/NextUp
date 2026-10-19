@@ -54,18 +54,37 @@ struct WidgetEntry: TimelineEntry {
         WidgetEntry(date: date, unfinishedCount: 0, stats: .zero, largeRows: [], isReadFailure: true, celebrates: false, showsBadge: false)
     }
 
+    /// 小组件图库里的示例任务，跟随当前语言。
+    private static func sampleTitles(_ language: AppLanguage) -> (parent: String, childA: String, childB: String, second: String, third: String, long: String, dates: (String, String)) {
+        switch language {
+        case .zhHans:
+            return ("与 Allen 对齐 BD 排期", "确认接口字段", "约下次评审", "确认 CashBack 发版事项", "更新 i18n 方案", "这是一条非常长的任务标题，用来确认右侧日期不会被挤出卡片", ("10/14", "10/15"))
+        case .zhHant:
+            return ("與 Allen 對齊 BD 時程", "確認介面欄位", "預約下次評審", "確認 CashBack 發版事項", "更新 i18n 方案", "這是一則非常長的任務標題，用來確認右側日期不會被擠出卡片", ("10/14", "10/15"))
+        case .japanese:
+            return ("Allen と BD の日程を調整", "API の項目を確認", "次のレビューを予約", "CashBack のリリース内容を確認", "i18n の方針を更新", "これは非常に長いタスクのタイトルで、右側の日付がカードからはみ出さないことを確認するためのものです", ("10/14", "10/15"))
+        case .french:
+            return ("Caler le planning BD avec Allen", "Vérifier les champs de l’API", "Planifier la prochaine revue", "Valider le contenu de la version CashBack", "Mettre à jour le plan i18n", "Ceci est un titre de tâche très long, pour vérifier que la date à droite ne sort pas de la carte", ("14/10", "15/10"))
+        case .englishAU:
+            return ("Align BD schedule with Allen", "Confirm API fields", "Book the next review", "Confirm CashBack release items", "Update the i18n plan", "This is a very long task title, used to check that the date on the right never gets pushed out of the card", ("14/10", "15/10"))
+        case .english:
+            return ("Align BD schedule with Allen", "Confirm API fields", "Book the next review", "Confirm CashBack release items", "Update the i18n plan", "This is a very long task title, used to check that the date on the right never gets pushed out of the card", ("10/14", "10/15"))
+        }
+    }
+
     static var preview: WidgetEntry {
+        let sample = sampleTitles(AppLanguage.resolved)
         let waiting = Copy.text(.waiting, AppLanguage.resolved)
         return WidgetEntry(
             date: .now,
             unfinishedCount: 5,
             stats: WidgetStats(unfinished: 5, overdue: 1, today: 2, upcoming: 1, undated: 1),
             largeRows: [
-                WidgetRow(id: "preview-1", title: "与 Allen 对齐 BD 排期", trailing: "10/14", isOverdue: false, canComplete: false),
-                WidgetRow(id: "preview-1a", title: "确认接口字段", trailing: "", isOverdue: false, depth: 1),
-                WidgetRow(id: "preview-1b", title: "约下次评审", trailing: "", isOverdue: false, depth: 1),
-                WidgetRow(id: "preview-2", title: "确认 CashBack 发版事项", trailing: "10/15", isOverdue: false),
-                WidgetRow(id: "preview-3", title: "更新 i18n 方案", trailing: waiting, isOverdue: false)
+                WidgetRow(id: "preview-1", title: sample.parent, trailing: sample.dates.0, isOverdue: false, canComplete: false),
+                WidgetRow(id: "preview-1a", title: sample.childA, trailing: "", isOverdue: false, depth: 1),
+                WidgetRow(id: "preview-1b", title: sample.childB, trailing: "", isOverdue: false, depth: 1),
+                WidgetRow(id: "preview-2", title: sample.second, trailing: sample.dates.1, isOverdue: false),
+                WidgetRow(id: "preview-3", title: sample.third, trailing: waiting, isOverdue: false)
             ],
             isReadFailure: false,
             celebrates: false,
@@ -74,6 +93,7 @@ struct WidgetEntry: TimelineEntry {
     }
 
     static var longTitle: WidgetEntry {
+        let sample = sampleTitles(AppLanguage.resolved)
         let overdue = Copy.text(.overdue, AppLanguage.resolved)
         return WidgetEntry(
             date: .now,
@@ -82,7 +102,7 @@ struct WidgetEntry: TimelineEntry {
             largeRows: [
                 WidgetRow(
                     id: "preview-long",
-                    title: "这是一条非常长的任务标题，用来确认右侧日期不会被挤出卡片",
+                    title: sample.long,
                     trailing: overdue,
                     isOverdue: true
                 )
@@ -96,17 +116,18 @@ struct WidgetEntry: TimelineEntry {
 
 struct NextUpProvider: TimelineProvider {
     func placeholder(in context: Context) -> WidgetEntry {
-        loadEntry()
+        .preview
     }
 
+    /// 图库预览用示例数据，不把用户真实任务放进图库。
     func getSnapshot(in context: Context, completion: @escaping (WidgetEntry) -> Void) {
-        completion(loadEntry())
+        completion(context.isPreview ? .preview : loadEntry())
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<WidgetEntry>) -> Void) {
         let now = Date()
         let nextMidnight = DueDate.nextLocalMidnight(after: now, calendar: .current)
-        guard let items = try? TodoRepository.localStore().load().items else {
+        guard let items = try? TodoRepository.inAppGroup().load().items else {
             completion(Timeline(entries: [.readFailure(date: now)], policy: .after(nextMidnight)))
             return
         }
@@ -127,7 +148,7 @@ struct NextUpProvider: TimelineProvider {
 
     private func loadEntry(now: Date = Date(), items: [TodoItem]? = nil) -> WidgetEntry {
         do {
-            let resolved = try items ?? TodoRepository.localStore().load().items
+            let resolved = try items ?? TodoRepository.inAppGroup().load().items
             let calendar = Calendar.current
             let stats = TodoSorting.widgetStats(resolved, now: now, calendar: calendar)
             let showsBadge = AppPreferences.showsWidgetBadge()
@@ -279,15 +300,17 @@ struct NextUpWidgetView: View {
         .accessibilityLabel(statisticsLabel)
     }
 
+    /// 数字为 0 的格子退到次要色，有内容的一眼就能扫到。逾期有数时用橙色。
     private func statCell(_ title: String, _ value: Int, emphasized: Bool) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(title)
-                .font(.system(size: 11))
+                .font(.system(size: NextUpChrome.dateSize))
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
+                .minimumScaleFactor(0.85)
             Text("\(value)")
-                .font(.system(size: NextUpChrome.taskSize, weight: .medium).monospacedDigit())
-                .foregroundStyle(emphasized ? Color.orange : Color.primary)
+                .font(.system(size: 17, weight: value > 0 ? .semibold : .regular).monospacedDigit())
+                .foregroundStyle(emphasized ? Color.orange : (value > 0 ? Color.primary : Color.secondary))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -301,7 +324,7 @@ struct NextUpWidgetView: View {
             "\(Copy.text(.widgetUpcoming, language)) \(stats.upcoming)",
             "\(Copy.text(.widgetUndated, language)) \(stats.undated)"
         ]
-        return parts.joined(separator: "，")
+        return parts.joined(separator: Copy.listSeparator(language))
     }
 
     private func rowsThatFit(in height: CGFloat) -> (rows: [WidgetRow], more: Int) {
@@ -442,8 +465,10 @@ struct NextUpWidgetView: View {
                             .font(.system(size: 16, weight: .regular))
                             .foregroundStyle(.secondary)
                             .frame(width: 16, height: 16)
+                            .padding(4)
                             .contentShape(Rectangle())
                     }
+                    .padding(-4)
                     .buttonStyle(.plain)
                     .accessibilityLabel(Copy.complete(row.title, language))
                 }
@@ -480,7 +505,7 @@ struct NextUpWidgetView: View {
             }
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(row.trailing.isEmpty ? row.title : "\(row.title)，\(row.trailing)")
+        .accessibilityLabel(row.trailing.isEmpty ? row.title : "\(row.title)\(Copy.listSeparator(language))\(row.trailing)")
     }
 
     private var openURL: URL? {

@@ -9,6 +9,7 @@ struct QuickAddMenu: View {
     @State private var failure: StoreError?
     @State private var pendingCount: Int?
     @State private var adding = false
+    @Environment(\.textScale) private var textScale
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -16,15 +17,16 @@ struct QuickAddMenu: View {
                 HStack(spacing: 12) {
                     Button(action: add) {
                         Image(systemName: "plus")
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundStyle(.tertiary)
-                            .frame(width: 22, height: 22)
+                            .font(.system(size: 15 * textScale, weight: .semibold))
+                            .foregroundStyle(.secondary)
+                            .frame(width: 22 * textScale, height: 22 * textScale)
                     }
                     .buttonStyle(.plain)
                     .help(Copy.text(.add, store.language))
+                    .accessibilityLabel(Copy.text(.add, store.language))
                     TextField(Copy.text(.menuPlaceholder, store.language), text: $title)
                         .textFieldStyle(.plain)
-                        .font(.system(size: NextUpChrome.taskSize))
+                        .font(.system(size: NextUpChrome.taskSize * textScale))
                         .onSubmit(add)
                         .onExitCommand {
                             title = ""
@@ -52,7 +54,7 @@ struct QuickAddMenu: View {
             .padding(.vertical, 8)
             .background(
                 Color.primary.opacity(0.05),
-                in: RoundedRectangle(cornerRadius: 8, style: .continuous)
+                in: RoundedRectangle(cornerRadius: NextUpChrome.containerRadius, style: .continuous)
             )
             TimelineView(.everyMinute) { context in
                 let upcoming = TodoSorting.widgetItems(store.document.items, limit: 3, now: context.date, calendar: .current)
@@ -64,7 +66,7 @@ struct QuickAddMenu: View {
                             } label: {
                                 upcomingRow(item, now: context.date)
                                     .padding(.vertical, 6)
-                                    .nextUpClickable(cornerRadius: 8, horizontalPadding: 6)
+                                    .nextUpClickable(cornerRadius: NextUpChrome.containerRadius, horizontalPadding: 6)
                             }
                             .buttonStyle(.plain)
                         }
@@ -84,23 +86,23 @@ struct QuickAddMenu: View {
                 HStack(spacing: 14) {
                     Button(Copy.text(.openApp, store.language), action: openApp)
                         .buttonStyle(.plain)
-                        .nextUpClickable(cornerRadius: 8, horizontalPadding: 6)
+                        .nextUpClickable(cornerRadius: NextUpChrome.containerRadius, horizontalPadding: 6)
                     Button(Copy.text(.quitApp, store.language)) { NSApp.terminate(nil) }
                         .buttonStyle(.plain)
-                        .nextUpClickable(cornerRadius: 8, horizontalPadding: 6)
+                        .nextUpClickable(cornerRadius: NextUpChrome.containerRadius, horizontalPadding: 6)
                 }
-                .font(.system(size: NextUpChrome.dateSize))
+                .font(.system(size: NextUpChrome.dateSize * textScale))
                 .foregroundStyle(.secondary)
             }
         }
         .padding(14)
-        .frame(width: 280)
+        .frame(width: 280 * textScale)
         .background {
             NextUpAluminumFill(window: true)
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: NextUpChrome.containerRadius, style: .continuous))
         }
         .overlay {
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
+            RoundedRectangle(cornerRadius: NextUpChrome.containerRadius, style: .continuous)
                 .strokeBorder(Color.primary.opacity(NextUpChrome.hairlineOpacity), lineWidth: NextUpChrome.hairline)
         }
         .onAppear { store.reload() }
@@ -111,14 +113,14 @@ struct QuickAddMenu: View {
         let auxiliary = TaskAuxiliaryText.make(status: item.status, dueDate: item.dueDate, dueTime: item.dueTime, now: now, calendar: .current, language: store.language)
         return HStack(alignment: .firstTextBaseline, spacing: 12) {
             Text(NextUpChrome.plainTitle(item.title))
-                .font(.system(size: NextUpChrome.taskSize))
+                .font(.system(size: NextUpChrome.taskSize * textScale))
                 .foregroundStyle(.primary)
                 .lineLimit(1)
                 .truncationMode(.tail)
                 .frame(maxWidth: .infinity, alignment: .leading)
             if let text = auxiliary.text {
                 Text(text)
-                    .font(.system(size: NextUpChrome.dateSize).monospacedDigit())
+                    .font(.system(size: NextUpChrome.dateSize * textScale).monospacedDigit())
                     .foregroundStyle(auxiliary.emphasis == .overdue ? Color.orange : Color.secondary)
                     .lineLimit(1)
                     .fixedSize(horizontal: true, vertical: false)

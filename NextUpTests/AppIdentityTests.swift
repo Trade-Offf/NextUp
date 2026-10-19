@@ -10,7 +10,6 @@ final class AppIdentityTests: XCTestCase {
         XCTAssertEqual(values["NEXTUP_WIDGET_BUNDLE_ID"], AppIdentity.placeholderWidgetBundleID)
         XCTAssertEqual(values["NEXTUP_APP_GROUP_ID"], AppIdentity.placeholderAppGroupID)
         XCTAssertEqual(values["NEXTUP_URL_SCHEME"], AppIdentity.placeholderURLScheme)
-        XCTAssertEqual(values["NEXTUP_WIDGET_KIND"], AppIdentity.placeholderWidgetKind)
         XCTAssertEqual(values["MACOSX_DEPLOYMENT_TARGET"], "15.0")
     }
 
@@ -24,13 +23,11 @@ final class AppIdentityTests: XCTestCase {
     func testReadsInjectedInfoValues() {
         let info: [String: Any] = [
             AppIdentity.appGroupInfoKey: " group.custom.nextup ",
-            AppIdentity.urlSchemeInfoKey: "customnextup",
-            AppIdentity.widgetKindInfoKey: "CustomKind"
+            AppIdentity.urlSchemeInfoKey: "customnextup"
         ]
 
         XCTAssertEqual(AppIdentity.string(for: AppIdentity.appGroupInfoKey, in: info), "group.custom.nextup")
         XCTAssertEqual(AppIdentity.string(for: AppIdentity.urlSchemeInfoKey, in: info), "customnextup")
-        XCTAssertEqual(AppIdentity.string(for: AppIdentity.widgetKindInfoKey, in: info), "CustomKind")
     }
 
     private func xcconfigURL() -> URL {

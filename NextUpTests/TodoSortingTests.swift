@@ -30,7 +30,6 @@ final class TodoSortingTests: XCTestCase {
             "无日期靠后",
             "逾期等待"
         ])
-        XCTAssertEqual(TodoSorting.incompleteCount(ordered + [done]), 7)
     }
 
     func testSameDueDateUsesCreatedAtThenIdentifier() {
@@ -81,11 +80,9 @@ final class TodoSortingTests: XCTestCase {
             TodoSorting.widgetItems(todos + [waiting], now: now, calendar: calendar).map(\.title),
             ["待办0", "待办1", "等待"]
         )
-        XCTAssertEqual(TodoSorting.incompleteCount(todos + [waiting]), 3)
 
         let crowded = TodoSorting.widgetItems(todos + [laterTodo, waiting], now: now, calendar: calendar)
         XCTAssertEqual(crowded.map(\.title), ["待办0", "待办1", "更晚的待办"])
-        XCTAssertEqual(TodoSorting.incompleteCount(todos + [laterTodo, waiting]), 4)
         XCTAssertEqual(TodoSorting.widgetItems([waiting], now: now, calendar: calendar).count, 1)
     }
 

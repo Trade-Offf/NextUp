@@ -12,6 +12,7 @@ struct ContentView: View {
     @State private var listMotionReady = false
     @FocusState private var composerFocused: Bool
     @Environment(\.openSettings) private var openSettings
+    @Environment(\.textScale) private var textScale
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -42,8 +43,8 @@ struct ContentView: View {
             NextUpAluminumFill(window: true)
                 .ignoresSafeArea()
         }
-        .toolbarBackground(Color.clear, for: .windowToolbar)
-        .toolbarBackgroundVisibility(.visible, for: .windowToolbar)
+        .toolbarBackground(.ultraThinMaterial, for: .windowToolbar)
+        .toolbarBackgroundVisibility(.automatic, for: .windowToolbar)
         .background(KeyWindowProbe { window, isKey in
             store.setWindow(window, isKey: isKey)
         })
@@ -51,6 +52,7 @@ struct ContentView: View {
             store.undoManager = undoManager
             store.observeUndoStack()
             store.reload()
+            store.watchForExternalChanges()
             composerFocused = store.document.items.isEmpty
             DispatchQueue.main.async { listMotionReady = true }
         }
@@ -113,7 +115,7 @@ struct ContentView: View {
                             SiblingColumn(items: done, depth: 0, dividers: true, fadesRemoval: true)
                         } label: {
                             Text(Copy.text(.completed, store.language))
-                                .font(.subheadline)
+                                .font(.system(size: 13 * textScale))
                                 .foregroundStyle(.secondary)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .padding(.vertical, 4)
@@ -135,7 +137,7 @@ struct ContentView: View {
                 .padding(.top, 4)
                 .padding(.bottom, 32)
                 .frame(maxWidth: 640, alignment: .leading)
-                .frame(maxWidth: .infinity, alignment: .topLeading)
+                .frame(maxWidth: .infinity, alignment: .top)
                 .animation(listAnimation, value: open.map(\.id))
                 .animation(listAnimation, value: done.map(\.id))
                 .animation(listAnimation, value: store.document.items.map(\.id))
@@ -160,12 +162,12 @@ struct ContentView: View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: 12) {
                 Image(systemName: "plus")
-                    .font(.system(size: 15, weight: .semibold))
+                    .font(.system(size: 15 * textScale, weight: .semibold))
                     .foregroundStyle(.tertiary)
-                    .frame(width: 22)
+                    .frame(width: 22 * textScale)
                 TextField(Copy.text(.composerPlaceholder, store.language), text: $draft, axis: .vertical)
                     .textFieldStyle(.plain)
-                    .font(.system(size: NextUpChrome.taskSize))
+                    .font(.system(size: NextUpChrome.taskSize * textScale))
                     .lineLimit(1...6)
                     .focused($composerFocused)
                     .onSubmit(commitDraft)
@@ -194,6 +196,14 @@ struct ContentView: View {
                 }
                 .padding(.bottom, 8)
                 .transition(pendingTransition)
+            }
+            if store.document.items.isEmpty, pendingPasteCount == nil, draftError == nil {
+                Text(Copy.text(.emptyHint, store.language))
+                    .font(.system(size: NextUpChrome.dateSize * textScale))
+                    .foregroundStyle(.secondary)
+                    .padding(.leading, 34)
+                    .padding(.bottom, 8)
+                    .transition(.opacity)
             }
             if let draftError {
                 Text(draftError.message)
@@ -472,6 +482,7 @@ private struct TaskGroup: View {
     @State private var composingChild = false
     @State private var childTitle = ""
     @FocusState private var childFocused: Bool
+    @Environment(\.textScale) private var textScale
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var children: [TodoItem] {
@@ -544,9 +555,9 @@ private struct TaskGroup: View {
     private var addComposer: some View {
         HStack(spacing: 12) {
             Image(systemName: "plus")
-                .font(.system(size: 15, weight: .semibold))
+                .font(.system(size: 15 * textScale, weight: .semibold))
                 .foregroundStyle(.tertiary)
-                .frame(width: 28, height: 28)
+                .frame(width: 28 * textScale, height: 28 * textScale)
                 .contentShape(Rectangle())
                 .onTapGesture(perform: beginComposingChild)
             Group {
@@ -573,8 +584,8 @@ private struct TaskGroup: View {
             }
             .animation(NextUpChrome.resolved(NextUpChrome.press, reduceMotion: reduceMotion), value: composingChild)
         }
-        .font(.system(size: NextUpChrome.taskSize))
-        .padding(.leading, CGFloat(depth + 1) * NextUpChrome.windowIndent)
+        .font(.system(size: NextUpChrome.taskSize * textScale))
+        .padding(.leading, CGFloat(depth + 1) * NextUpChrome.windowIndent * textScale)
         .padding(.vertical, NextUpChrome.windowRowPadding)
         .nextUpClickable(cornerRadius: 8, horizontalPadding: 0, showsHoverFill: !composingChild)
         .accessibilityLabel(Copy.text(.addSubtask, store.language))
@@ -626,6 +637,7 @@ private struct ElasticTaskRow: View {
     @State private var pickingDeadline = false
     @State private var parentCheckScale: CGFloat = 1
     @FocusState private var editFocused: Bool
+    @Environment(\.textScale) private var textScale
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -639,9 +651,9 @@ private struct ElasticTaskRow: View {
                 .accessibilityLabel(item.status == .done ? Copy.reopen(item.title, store.language) : Copy.complete(item.title, store.language))
             } else if item.status == .done {
                 Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 18, weight: .regular))
+                    .font(.system(size: 18 * textScale, weight: .regular))
                     .foregroundStyle(.secondary)
-                    .frame(width: 28, height: 28)
+                    .frame(width: 28 * textScale, height: 28 * textScale)
                     .scaleEffect(parentCheckScale)
                     .accessibilityLabel(Copy.completedItem(item.title, store.language))
             }
@@ -649,7 +661,7 @@ private struct ElasticTaskRow: View {
             titleControl
         }
         .padding(.vertical, NextUpChrome.windowRowPadding)
-        .padding(.leading, CGFloat(depth) * NextUpChrome.windowIndent)
+        .padding(.leading, CGFloat(depth) * NextUpChrome.windowIndent * textScale)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background {
             ZStack {
@@ -732,7 +744,7 @@ private struct ElasticTaskRow: View {
             if editing {
                 TextField(Copy.text(.title, store.language), text: $editTitle)
                     .textFieldStyle(.plain)
-                    .font(.body)
+                    .font(.system(size: NextUpChrome.taskSize * textScale))
                     .focused($editFocused)
                     .onSubmit(commitEdit)
                     .onExitCommand { editing = false }
@@ -745,7 +757,7 @@ private struct ElasticTaskRow: View {
                     }
             } else {
                 Text(NextUpChrome.plainTitle(item.title))
-                    .font(.system(size: NextUpChrome.taskSize, weight: hasChildren && item.status != .done ? .semibold : .regular))
+                    .font(.system(size: NextUpChrome.taskSize * textScale, weight: hasChildren && item.status != .done ? .semibold : .regular))
                     .foregroundStyle(item.status == .done ? .secondary : .primary)
                     .strikethrough(item.status == .done, color: .secondary)
                     .lineLimit(2)
@@ -764,7 +776,7 @@ private struct ElasticTaskRow: View {
                     )
                     if let text = auxiliary.text {
                         Text(text)
-                            .font(.system(size: NextUpChrome.dateSize).monospacedDigit())
+                            .font(.system(size: NextUpChrome.dateSize * textScale).monospacedDigit())
                             .foregroundStyle(auxiliary.emphasis == .overdue ? Color.orange : Color.secondary)
                             .lineLimit(1)
                             .fixedSize(horizontal: true, vertical: false)
@@ -790,9 +802,9 @@ private struct ElasticTaskRow: View {
 
     private var statusSymbol: some View {
         let symbol = Image(systemName: item.status == .done ? "checkmark.circle.fill" : "circle")
-            .font(.system(size: 18, weight: .regular))
+            .font(.system(size: 18 * textScale, weight: .regular))
             .foregroundStyle(item.status == .done ? Color.secondary : Color.primary)
-            .frame(width: 28, height: 28)
+            .frame(width: 28 * textScale, height: 28 * textScale)
         return Group {
             if reduceMotion {
                 symbol

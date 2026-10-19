@@ -5,18 +5,17 @@ import WidgetKit
 /// plist 中的值由 Config/NextUp.xcconfig 在构建时注入。
 /// placeholder 只在 plist 缺少键时兜底，并被测试用来核对 xcconfig，避免两处配置悄悄分叉。
 public enum AppIdentity {
-    public static let placeholderAppBundleID = "com.example.nextup"
-    public static let placeholderWidgetBundleID = "com.example.nextup.widget"
-    public static let placeholderAppGroupID = "group.com.example.nextup"
+    public static let placeholderAppBundleID = "com.binyu.nextupapp"
+    public static let placeholderWidgetBundleID = "com.binyu.nextupapp.widget"
+    /// macOS 的 App Group 用团队号开头，不需要在开发者网站登记。
+    public static let placeholderAppGroupID = "372XT34PQJ.com.binyu.nextupapp"
     public static let placeholderURLScheme = "nextup"
-    public static let placeholderWidgetKind = "NextUpWidget"
     public static let countWidgetKind = "NextUpCount"
     public static let listWidgetKind = "NextUpList"
     public static let widgetKinds = [countWidgetKind, listWidgetKind]
 
     public static let appGroupInfoKey = "NextUpAppGroupID"
     public static let urlSchemeInfoKey = "NextUpURLScheme"
-    public static let widgetKindInfoKey = "NextUpWidgetKind"
 
     public static func appGroupID(in bundle: Bundle = .main) -> String {
         string(for: appGroupInfoKey, in: bundle) ?? placeholderAppGroupID
@@ -24,10 +23,6 @@ public enum AppIdentity {
 
     public static func urlScheme(in bundle: Bundle = .main) -> String {
         string(for: urlSchemeInfoKey, in: bundle) ?? placeholderURLScheme
-    }
-
-    public static func widgetKind(in bundle: Bundle = .main) -> String {
-        string(for: widgetKindInfoKey, in: bundle) ?? placeholderWidgetKind
     }
 
     public static func string(for key: String, in bundle: Bundle) -> String? {

@@ -2,8 +2,23 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>en</string>
+		<string>en-AU</string>
+		<string>fr</string>
+		<string>ja</string>
+		<string>zh-Hans</string>
+		<string>zh-Hant</string>
+	</array>
 	<key>CFBundleName</key>
-	<string>Next Up</string>
+	<string>Next TODO</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<key>NSHumanReadableCopyright</key>
+	<string>Copyright © 2026 佳林 李</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -21,7 +36,5 @@
 	<string>$(NEXTUP_APP_GROUP_ID)</string>
 	<key>NextUpURLScheme</key>
 	<string>$(NEXTUP_URL_SCHEME)</string>
-	<key>NextUpWidgetKind</key>
-	<string>$(NEXTUP_WIDGET_KIND)</string>
 </dict>
 </plist>
