@@ -11,7 +11,7 @@ Next TODO does not collect, transmit or share any personal data.
 - No analytics, advertising or tracking.
 - Your tasks and preferences are stored only on your Mac, in a container shared between the app and its widgets. Deleting the app removes them.
 
-Contact: https://gitlab.com/nexttodo/nexttodo
+Contact: https://github.com/Trade-Offf/NextUp
 
 ## 简体中文
 
@@ -22,7 +22,7 @@ Next TODO 不收集、不传输、也不分享任何个人数据。
 - 没有统计、广告或跟踪。
 - 你的任务和偏好只保存在这台 Mac 上，由应用和它的小组件共用同一个容器。删除应用会一并删除这些数据。
 
-联系方式：https://gitlab.com/nexttodo/nexttodo
+联系方式：https://github.com/Trade-Offf/NextUp
 
 ## 繁體中文
 
@@ -33,4 +33,4 @@ Next TODO 不收集、不傳輸、也不分享任何個人資料。
 - 沒有統計、廣告或追蹤。
 - 你的任務和偏好只儲存在這台 Mac 上，由應用程式和它的小工具共用同一個容器。刪除應用程式會一併刪除這些資料。
 
-聯絡方式：https://gitlab.com/nexttodo/nexttodo
+聯絡方式：https://github.com/Trade-Offf/NextUp

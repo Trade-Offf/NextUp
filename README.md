@@ -1,49 +1,92 @@
+<div align="center">
+
+<img src="docs/images/logo.png" width="128" height="128" alt="Next TODO">
+
 # Next TODO
 
-macOS 上的个人待办（中文名「接下来」）。主窗口记事，菜单栏快速添加，桌面放两块小组件。
+**A small, quiet to-do list for your Mac. Write it down, see what's next, get on with your day.**
 
-不登录，不联网，不发系统通知，不上传任何数据。任务只保存在这台 Mac 上，由主应用和小组件共用一个 App Group 容器。
+![Platform](https://img.shields.io/badge/platform-macOS%2015%2B-black?logo=apple)
+![Swift](https://img.shields.io/badge/Swift-SwiftUI%20%2B%20WidgetKit-F05138?logo=swift&logoColor=white)
+![Version](https://img.shields.io/badge/version-1.0-orange)
+![Privacy](https://img.shields.io/badge/data-stays%20on%20your%20Mac-2ea44f)
 
-## 能做什么
+English · [简体中文](README.zh-CN.md)
 
-- 记一条，或一次粘贴多行大纲。层级最多三层。
-- 点任务添加子任务。有子任务的条目不能单独勾选，子任务全部完成后它才算完成。
-- 右键可以改标题、设置截止时间或删除。拖动调整顺序，支持撤销和重做。
-- 菜单栏图标：输入框下面是接下来最值得看的三件事。
-- 小组件有两块。中号「还剩多少」显示逾期、今天、以后、未排期的数量；大号「接下来」按日期列出任务，可以直接点圆圈完成。小组件只统计没有子任务的叶子任务。
-- 设置里可以选语言、文字大小（小、中、大）、自定义快捷键、清空今日或全部数据，以及是否在小组件显示徽章。
+</div>
 
-支持语言：English、English (Australia)、Français、日本語、简体中文、繁體中文。默认跟随系统语言，系统语言不在列表里时使用英语。
+---
 
-最低系统是 macOS 15。
+## Highlights
 
-## 跑起来
+- **Write fast.** Type a task and press Return. Paste a whole outline and it becomes a list with sub-tasks, up to three levels deep.
+- **Menu bar quick add.** Add a task from anywhere. The three tasks that matter most sit right below the field.
+- **Two desktop widgets.** *What's Left* counts what remains: overdue, today, later, unscheduled. *Next TODO* lists upcoming tasks by date, and you can tick one off right on the desktop.
+- **Made for the Mac.** Custom keyboard shortcuts, undo and redo, small / medium / large text, light and dark appearance, VoiceOver and full keyboard navigation.
+- **Private by design.** No account, no sign-in, no ads, no analytics, no network access. Your tasks never leave your Mac.
+- **Speaks your language.** English, English (Australia), Français, 日本語, 简体中文, 繁體中文. It follows your system language.
 
-用 Xcode 打开 `NextUp.xcodeproj`，运行 Next TODO。或在工程目录执行：
+## Install
+
+Next TODO is coming to the Mac App Store. Requires macOS 15 or later.
+
+## Get started
+
+1. Open Next TODO and type your first task.
+2. Click the menu bar icon to add tasks from any app.
+3. Add a widget: click the date in the menu bar, choose **Edit Widgets**, search for *Next TODO*, and pick the medium or large size.
+
+| Do this | To get this |
+| --- | --- |
+| Click a task | Add a sub-task |
+| Right-click a task | Rename, set a due date, or delete |
+| Paste multi-line text | A task outline with sub-tasks |
+| Drag a task | Reorder it |
+| Click the circle in a widget | Complete the task without opening the app |
+
+A parent task is done only when all its sub-tasks are done. Widgets count leaf tasks only, so the numbers always match what you can actually do.
+
+## Settings
+
+Language, text size, keyboard shortcuts, the widget badge, and clearing today's or all tasks. Everything is saved immediately.
+
+## Privacy
+
+Tasks and preferences are stored in an App Group container on your Mac, shared between the app and its widgets. Files are backed up before each write, and a damaged file is never overwritten silently. See the [privacy policy](docs/PRIVACY.md).
+
+## Build from source
+
+Requires Xcode 26 and macOS 15 or later.
 
 ```bash
-xcodebuild -project NextUp.xcodeproj -scheme NextUp -destination 'platform=macOS' -derivedDataPath build test
-open "build/Build/Products/Debug/NextUp.app"
+git clone https://github.com/Trade-Offf/NextUp.git
+cd NextUp
+open NextUp.xcodeproj
 ```
 
-关闭窗口不会退出应用，在菜单栏里选「退出 Next TODO」才会退出。
+Run the **NextUp** scheme. To run the tests:
 
-添加小组件：点菜单栏的日期或时间，底部选「编辑小组件」，搜索 Next TODO，添加中号或大号。
+```bash
+xcodebuild -project NextUp.xcodeproj -scheme NextUp \
+  -destination 'platform=macOS' -derivedDataPath build test
+```
 
-## 工程
+Bundle IDs, App Group, URL scheme and version live in [`Config/NextUp.xcconfig`](Config/NextUp.xcconfig).
 
-| 目录 | 作用 |
+## Project layout
+
+| Folder | What's inside |
 | --- | --- |
-| `NextUpApp` | 主窗口、菜单栏和设置 |
-| `NextUpWidget` | 桌面小组件 |
-| `NextUpShared` | 两边共用的任务、排序、存储和多语言文案 |
-| `NextUpTests` | 单元测试 |
-| `Config/NextUp.xcconfig` | Bundle ID、App Group、URL Scheme、版本号 |
-| `docs/ACCEPTANCE.md` | 验收记录 |
-| `PRODUCT.md` | 产品定位和约束 |
+| `NextUpApp` | Main window, menu bar and settings |
+| `NextUpWidget` | Desktop widgets |
+| `NextUpShared` | Tasks, sorting, storage and localisation shared by both |
+| `NextUpTests` | Unit tests |
+| `docs` | [Acceptance notes](docs/ACCEPTANCE.md), [App Store copy](docs/APP_STORE.md), [privacy policy](docs/PRIVACY.md) |
 
-标识只改 `Config/NextUp.xcconfig`。Swift 里的占位值和它不一致时，测试会失败。
+---
 
-## 数据
+<div align="center">
 
-任务和偏好保存在 App Group 容器 `372XT34PQJ.com.binyu.nextupapp` 里，文件有 `todos.json`、`todos.json.bak` 和 `preferences.json`。写入前会备份，文件损坏时界面会提示并支持从备份恢复。
+© 2026 佳林 李. All rights reserved.
+
+</div>
